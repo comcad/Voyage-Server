@@ -40,11 +40,10 @@ function enter(pi) {
 		eim.setProperty("entryTimeStamp", 1000 * 60 * 6);
 		for(var g=0; g<party.size(); g++) {
 			party.get(g).changeMap(target, targetPortal);
-			party.get(g).getClient().sendClock(party.get(g).getClient(), 300);
 		}
 		return true;
 	}else {
-		pi.getPlayer().dropMessage(6, "Please kill all monsters before proceeding.");
+		pi.getPlayer().dropMessage(6, "You need to kill all monsters before proceeding.");
 		return false;
 	}
 }
