@@ -25,11 +25,11 @@ BossRushPQ - Next Stage
 */
 
 function enter(pi) {
-    if(pi.getMap().getMonsters().size() == 0) {
+    if(pi.getMap().getMonsters().isEmpty()) {
         var nextStage;
         
-        if(pi.getMapId() % 5 == 0) nextStage = pi.getMapId() + 100;
-        else nextStage = 970030001 + (pi.getMapId() - 970030100 / 500);
+        if(pi.getMapId() % 500 != 0) nextStage = pi.getMapId() + 100;
+        else nextStage = 970030001 + ((pi.getMapId() - 970030100) / 500);
         
         pi.warp(nextStage);
         return true;
