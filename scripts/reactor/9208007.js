@@ -22,9 +22,21 @@
 /*
 Stage 2: Spear destinations - Guild Quest
 
-@Author Lerk
+@Author Lerk, Ronan
 */
 
 function act() {
-        rm.getPlayer().getEventInstance().getMapInstance(990000400).getReactorByName("speargate").hitReactor(rm.getPlayer().getClient());
+        var react = rm.getPlayer().getEventInstance().getMapInstance(990000400).getReactorByName("speargate");
+        react.forceHitReactor(react.getState() + 1);
+        
+        if(react.getState() == 4) {
+                var eim = rm.getPlayer().getEventInstance();
+
+                var maps = [990000400, 990000410, 990000420, 990000430, 990000431, 990000440];
+                for(var i = 0; i < maps.length; i++) {
+                        eim.showClearEffect(false, maps[i]);
+                }
+                
+                rm.getGuild().gainGP(20);
+        }
 }
