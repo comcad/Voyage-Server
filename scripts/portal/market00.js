@@ -20,8 +20,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 function enter(pi) {
-    try { 
-        pi.warp(pi.getPlayer().getSavedLocation("FREE_MARKET"));
+    try {
+        var toMap = pi.getPlayer().getSavedLocation("FREE_MARKET");
+        pi.warp(toMap, pi.getMarketPortalId(toMap));
     } catch(err) {
         pi.warp(100000000);
     }
