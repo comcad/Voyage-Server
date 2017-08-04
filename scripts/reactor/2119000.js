@@ -19,6 +19,8 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-function act() {
-    rm.spawnMonster(9400711, 1);
+function hit() {
+    rm.hitMonsterWithReactor(6090000, 14);
 }
+
+function act() {}
