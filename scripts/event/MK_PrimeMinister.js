@@ -2,6 +2,9 @@ var minPlayers = 1;
 var entryMap = 106021402;
 var exitMap = 106021600;
 
+var minMapId = 106021601;
+var maxMapId = 106021601;
+
 function init(){}
 
 function setup(difficulty, lobbyId){
@@ -84,11 +87,8 @@ function playerExit(eim, player){
 	player.changeMap(entryMap, 2);
 }
 
-function moveMap(eim, player){
-	if(player.getMap().getId() == exitMap || player.getMap().getId() == entryMap){
-		removePlayer(eim, player);
-		eim.dispose();
-	}
+function changedMap(eim, chr, mapid) {
+        if(mapid < minMapId || mapid > maxMapId) playerExit(eim, chr);
 }
 
 function removePlayer(eim, player){
