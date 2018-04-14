@@ -25,6 +25,8 @@
 	Quest ID: 		2214
 */
 
+importPackage(java.util);
+
 var status = -1;
 
 function end(mode, type, selection) {
@@ -42,6 +44,13 @@ function end(mode, type, selection) {
             status--;
         
         if (status == 0) {
+            var hourDay = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+            if(!(hourDay >= 17 && hourDay < 20)) {
+                qm.sendNext("(Hmm, I'm searching the trash can but can't find the #t4031894# JM was talking about, maybe it's not time yet...)");
+                qm.dispose();
+                return;
+            }
+            
             if(!qm.canHold(4031894, 1)) {
                 qm.sendNext("(Eh, I can't hold the #t4031894# right now, I need an ETC slot available.)");
                 qm.dispose();
