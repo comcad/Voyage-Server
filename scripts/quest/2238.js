@@ -35,25 +35,8 @@ function start(mode, type, selection) {
             status--;
         
         if (status == 0) {
-            em = qm.getEventManager("BalrogQuest");
-            if (em == null) {
-                qm.sendOk("Sorry, but the BalrogQuest is closed.");
-                qm.dispose();
-                return;
-            }
-            
-            if (em.getProperty("noEntry") == "false") {
-                var eim = em.newInstance("BalrogQuest");
-                eim.registerPlayer(qm.getPlayer());
-                eim.startEvent();
-
-                qm.forceStartQuest();
-                qm.dispose();
-            }
-            else {
-                qm.sendOk("There is currently someone in this map, come back later.");
-                qm.dispose();
-            }
+            qm.forceStartQuest();
+            qm.dispose();
         }
     }
 }
