@@ -19,7 +19,7 @@
 */
 package net.server.channel.worker;
 
-import tools.locks.MonitoredLockType;
+import net.server.audit.locks.MonitoredLockType;
 
 /**
  *
