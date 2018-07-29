@@ -20,15 +20,15 @@
 package net.server.channel.worker;
 
 import java.util.Collections;
-import java.util.concurrent.locks.Lock;
 import net.server.audit.locks.MonitoredLockType;
+import net.server.audit.locks.MonitoredReentrantLock;
 
 /**
  *
  * @author Ronan
  */
 public class FaceExpressionScheduler extends BaseScheduler {
-    public FaceExpressionScheduler(final Lock channelFaceLock) {
+    public FaceExpressionScheduler(final MonitoredReentrantLock channelFaceLock) {
         super(MonitoredLockType.CHANNEL_FACESCHDL, Collections.singletonList(channelFaceLock));
     }
     
