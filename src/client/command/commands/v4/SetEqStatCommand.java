@@ -31,7 +31,7 @@ import client.inventory.MapleInventory;
 import client.inventory.MapleInventoryType;
 import constants.ItemConstants;
 
-public class SetQStatCommand extends Command {
+public class SetEqStatCommand extends Command {
     {
         setDescription("");
     }
@@ -40,33 +40,33 @@ public class SetQStatCommand extends Command {
     public void execute(MapleClient c, String[] params) {
         MapleCharacter player = c.getPlayer();
         if (params.length < 1) {
-            player.yellowMessage("Syntax: !seteqstat <statvalue>");
+            player.yellowMessage("Syntax: !seteqstat <stat value> [<spdjmp value>]");
             return;
         }
 
-        int newStat = Integer.parseInt(params[0]);
+        short newStat = (short) Math.max(0, Integer.parseInt(params[0]));
+        short newSpdJmp = params.length >= 2 ? (short) Integer.parseInt(params[1]) : 0;
         MapleInventory equip = player.getInventory(MapleInventoryType.EQUIP);
-
+        
         for (byte i = 1; i <= equip.getSlotLimit(); i++) {
             try {
                 Equip eu = (Equip) equip.getItem(i);
                 if (eu == null) continue;
 
-                short incval = (short) newStat;
-                eu.setWdef(incval);
-                eu.setAcc(incval);
-                eu.setAvoid(incval);
-                eu.setJump(incval);
-                eu.setMatk(incval);
-                eu.setMdef(incval);
-                eu.setHp(incval);
-                eu.setMp(incval);
-                eu.setSpeed(incval);
-                eu.setWatk(incval);
-                eu.setDex(incval);
-                eu.setInt(incval);
-                eu.setStr(incval);
-                eu.setLuk(incval);
+                eu.setWdef(newStat);
+                eu.setAcc(newStat);
+                eu.setAvoid(newStat);
+                eu.setJump(newSpdJmp);
+                eu.setMatk(newStat);
+                eu.setMdef(newStat);
+                eu.setHp(newStat);
+                eu.setMp(newStat);
+                eu.setSpeed(newSpdJmp);
+                eu.setWatk(newStat);
+                eu.setDex(newStat);
+                eu.setInt(newStat);
+                eu.setStr(newStat);
+                eu.setLuk(newStat);
 
                 byte flag = eu.getFlag();
                 flag |= ItemConstants.UNTRADEABLE;
