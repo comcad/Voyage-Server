@@ -27,75 +27,25 @@
 	1.0 - First Version by Angel
         2.0 - Second Version by happydud3 & XotiCraze
         3.0 - Third Version by RonanLana (HeavenMS)
+        4.0 - Four Version bby Drago(MapleStorySA)
 ---------------------------------------------------------------------------------------------------
 **/
-
-var bgPrizes = [[2022179,10], [2022282,10], [2210005,5], [2210003,5]];
-var cmPrizes = [[2022011,10], [2000005,50], [2022273,10], [2022179,3]];
-
-var status;
+var status = -1;
 
 function start() {
     status = -1;
     action(1, 0, 0);
 }
 
-function action(mode, type, selection) { 
-    if (mode == -1 || mode == 0) {
-        cm.sendOk("Goodbye then."); 
-        cm.dispose();
-        return;
-    } else if (mode == 1) {
+function action(mode, type, selection) {
+    if (mode == 1) {
         status++;
     } else {
-        status--;
+        cm.dispose();
+        return;
     }
-		
     if (status == 0) {
-        var msg = "Hello I exchange Onyx Chest for Bride and Groom and the Onyx Chest for prizes!#b";
-        var choice1 = new Array("I have an Onyx Chest for Bride and Groom", "I have an Onyx Chest");
-        for (var i = 0; i < choice1.length; i++) {
-            msg += "\r\n#L" + i + "#" + choice1[i] + "#l";
-        }
-        cm.sendSimple(msg);
-    } else if (status == 1) {
-        if (selection == 0) {
-            if (cm.haveItem(4031424)) {
-                if (cm.getPlayer().isMarried()) {   // thanks MedicOP for solving an issue here
-                    if(cm.getInventory(2).getNextFreeSlot() >= 0) {
-                        var rand = Math.floor(Math.random() * bgPrizes.length);
-                        cm.gainItem(bgPrizes[rand][0], bgPrizes[rand][1]);
-
-                        cm.gainItem(4031424,-1);
-                        cm.dispose();
-                    } else {
-                        cm.sendOk("You don't have a free USE slot right now.");
-                        cm.dispose();
-                    }
-                } else {
-                    cm.sendOk("You must be married to claim the prize for this box.");
-                    cm.dispose();
-                }
-            } else {
-                cm.sendOk("You don't have an Onyx Chest for Bride and Groom.");
-                cm.dispose();
-            }
-        } else if (selection == 1) {
-            if (cm.haveItem(4031423)) {
-                if(cm.getInventory(2).getNextFreeSlot() >= 0) {
-                    var rand = Math.floor(Math.random() * cmPrizes.length);
-                    cm.gainItem(cmPrizes[rand][0], cmPrizes[rand][1]);
-
-                    cm.gainItem(4031423,-1);
-                    cm.dispose();
-                } else {
-                    cm.sendOk("You don't have a free USE slot right now.");
-                    cm.dispose();
-                }
-            } else {
-                cm.sendOk("You don't have an Onyx Chest.");
-                cm.dispose();
-            }
-        }
+        cm.enviarLista();
+        cm.dispose();
     }
-} 
+}
