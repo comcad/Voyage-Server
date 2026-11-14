@@ -860,7 +860,15 @@ public class Server {
 
     public void init() {
         Instant beforeInit = Instant.now();
-        log.info("Cosmic v{} starting up.", ServerConstants.VERSION);
+        if (net.server.admin.AdminServer.wanted()) {
+            net.server.admin.AdminLog.install();   // the admin page's console, from the first line
+        }
+        log.info("Voyage server v{} starting up.", ServerConstants.VERSION);
+        if (provider.DataProviderFactory.assetsFolder() != null) {
+            log.info("Game data from {}, with the customs in {}", provider.DataProviderFactory.assetsFolder(), provider.DataProviderFactory.customsFolder());
+        } else {
+            log.warn("No ASSETS_PATH: the game data is read from the wz folder ({})", provider.wz.WZFiles.DIRECTORY);
+        }
 
         if (YamlConfig.config.server.SHUTDOWNHOOK) {
             Runtime.getRuntime().addShutdownHook(new Thread(shutdown(false)));
@@ -939,7 +947,8 @@ public class Server {
 
         online = true;
         Duration initDuration = Duration.between(beforeInit, Instant.now());
-        log.info("Cosmic is now online after {} ms.", initDuration.toMillis());
+        log.info("The Voyage server is now online after {} ms.", initDuration.toMillis());
+        net.server.admin.AdminServer.start();
 
         OpcodeConstants.generateOpcodeNames();
         CommandsExecutor.getInstance();
@@ -1913,6 +1922,14 @@ public class Server {
         TimerManager.getInstance().register(() -> disconnectIdlesOnLoginState(), 300000);
     }
 
+    private volatile int exitCode = 0;
+
+    /** Shuts the server down and ends the process with this code (from the admin page: 75 asks for a restart). */
+    public void stopWith(int code) {
+        exitCode = code;
+        shutdown(false).run();
+    }
+
     public final Runnable shutdown(final boolean restart) {//no player should be online when trying to shutdown!
         return () -> shutdownInternal(restart);
     }
@@ -1970,7 +1987,8 @@ public class Server {
             // after our last log statement.
             LogManager.shutdown();
 
-            new Thread(() -> System.exit(0)).start();
+            final int code = exitCode;
+            new Thread(() -> System.exit(code)).start();
         } else {
             log.info("Restarting the server...");
             instance = null;

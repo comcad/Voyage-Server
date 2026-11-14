@@ -159,11 +159,19 @@ worlds:
 
 server:
     #Database Configuration
-    DB_URL_FORMAT: "jdbc:mysql://%s:3306/cosmic" # If the docker ENV for DB_HOST is anything but "db", this string format should be changed from 3306 to 3307 (or whichever port it was changed to in docker) 
+    DB_URL_FORMAT: "jdbc:mysql://%s:3306/voyage" # If the docker ENV for DB_HOST is anything but "db", this string format should be changed from 3306 to 3307 (or whichever port it was changed to in docker) 
     DB_HOST: "localhost" 
     DB_USER: "root"
     DB_PASS: ""
     INIT_CONNECTION_POOL_TIMEOUT: 90    # Seconds
+
+    #Game data
+    ASSETS_PATH: "../voyage-assets"     #The assets folder the Voyage extractor made, absolute or relative to this folder. The game data is read from it, then from its customs folder (assets/customs), whose files stand in for the ones of the same name. The ASSETS_PATH environment variable wins when it is set.
+
+    #Admin page
+    ADMIN_PORT: 0                       #The admin page's port: how the server is doing, who is playing, a notice to everyone, restart, the settings, the console. 0 leaves it off.
+    ADMIN_HOST: "0.0.0.0"               #The address the admin page listens on.
+    ADMIN_PASSWORD: ""                  #The admin page's password. Without one the page stays off. The ADMIN_PORT and ADMIN_PASSWORD environment variables win when they are set.
 
     #Login Configuration
     WORLDS: 1                           #Initial number of worlds on the server.

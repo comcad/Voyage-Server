@@ -145,7 +145,7 @@ public class MapFactory {
         float monsterRate = 0;
         Data mobRate = infoData.getChildByPath("mobRate");
         if (mobRate != null) {
-            monsterRate = (Float) mobRate.getData();
+            monsterRate = DataTool.getFloat(mobRate);   // (a JSON number is not always a Float)
         }
         map = new MapleMap(mapid, world, channel, DataTool.getInt("returnMap", infoData), monsterRate);
         map.setEventInstance(event);

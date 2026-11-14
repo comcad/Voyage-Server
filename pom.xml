@@ -2,12 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>cosmic-maplestory</groupId>
-    <artifactId>Cosmic</artifactId>
+    <groupId>voyage</groupId>
+    <artifactId>voyage-server</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Cosmic</name>
+    <name>Voyage Server</name>
+    <!-- A fork of Cosmic (github.com/P0nk/Cosmic) that reads the game data from Voyage's assets. -->
     <description>Server emulator for Global MapleStory version 83</description>
     <url>https://github.com/P0nk/Cosmic</url>
     <inceptionYear>2021</inceptionYear>

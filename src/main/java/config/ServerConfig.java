@@ -10,6 +10,10 @@ public class ServerConfig {
     public String DB_HOST;
     public String DB_USER;
     public String DB_PASS;
+    public String ASSETS_PATH;
+    public int ADMIN_PORT;
+    public String ADMIN_HOST;
+    public String ADMIN_PASSWORD;
     public int INIT_CONNECTION_POOL_TIMEOUT;
 
     //Login Configuration

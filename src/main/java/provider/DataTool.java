@@ -21,6 +21,8 @@
 */
 package provider;
 
+import config.YamlConfig;
+import provider.json.JsonData;
 import provider.wz.DataType;
 
 import java.awt.*;
@@ -47,18 +49,26 @@ public class DataTool {
     }
 
     public static double getDouble(Data data) {
-        return (Double) data.getData();
+        return ((Number) data.getData()).doubleValue();
     }
 
     public static float getFloat(Data data) {
-        return (Float) data.getData();
+        float value = ((Number) data.getData()).floatValue();
+        // The XML reader parses every number with the unit-price locale. With USE_UNITPRICE_WITH_COMMA on (the
+        // default) that locale's decimal mark is a comma, so a float written "1.6" has always been read as 1: a
+        // map's mobRate, a foothold's speed. The JSON holds the real number; it is read the same way here, so maps
+        // and monsters stay as they have been. Doubles (unit prices) were written with the comma and are exact.
+        if (data instanceof JsonData && YamlConfig.config.server.USE_UNITPRICE_WITH_COMMA) {
+            return (float) (long) value;
+        }
+        return value;
     }
 
     public static int getInt(Data data) {
         if (data == null || data.getData() == null) {
             return 0;// DEF?
         }
-        return (Integer) data.getData();
+        return ((Number) data.getData()).intValue();
     }
 
     public static int getInt(String path, Data data) {
@@ -107,12 +117,7 @@ public class DataTool {
         } else if (data.getType() == DataType.STRING) {
             return Integer.parseInt(getString(data));
         } else {
-            Object numData = data.getData();
-            if (numData instanceof Integer) {
-                return (Integer) numData;
-            } else {
-                return (Short) numData;
-            }
+            return ((Number) data.getData()).intValue();
         }
     }
 

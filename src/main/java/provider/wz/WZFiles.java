@@ -26,6 +26,11 @@ public enum WZFiles {
         this.fileName = name + ".wz";
     }
 
+    /** The WZ file's name without ".wz" ("Map"): the name of its folder in the assets. */
+    public String getName() {
+        return fileName.substring(0, fileName.length() - 3);
+    }
+
     public Path getFile() {
         return Path.of(DIRECTORY, fileName);
     }

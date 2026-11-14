@@ -1,48 +1,26 @@
-# Initial Docker support thanks to xinyifly
-# Optimisation performed by wejrox
+# Voyage-Server in one container: MySQL and the game server, with its admin page. The game data is not in the image:
+# the assets folder is mounted when it runs (docker-compose.yml).
 
-#
-# Cosmic JAR creation stage
-#
+# The game server's jar.
 FROM maven:3.9.6-amazoncorretto-21 AS jar
-
-# Build in a separated location which won't have permissions issues.
-WORKDIR /opt/cosmic
-
-# Any changes to the pom will affect the entire build, so it should be copied first.
+WORKDIR /opt/voyage-server
 COPY pom.xml ./pom.xml
-
-# Grab all the dependencies listed in the pom early, since it prevents changes to source code from requiring a complete re-download.
-# Skip compiling tests since we don't want all the dependencies to be downloaded.
-# RUN mvn -f ./pom.xml clean dependency:go-offline -Dmaven.test.skip -T 1C
-# TODO: The above command stopped working as of Java 21 upgrade due to:
-# Failed to execute goal org.apache.maven.plugins:maven-dependency-plugin:3.6.1:go-offline (default-cli) on project Cosmic: org.eclipse.aether.resolution.DependencyResolutionException: The following artifacts could
-# not be resolved: io.netty:netty-tcnative:jar:${os.detected.classifier}:2.0.65.Final (absent): Could not find artifact io.netty:netty-tcnative:jar:${os.detected.classifier}:2.0.65.Final in central (https://repo.maven.apache.org/maven2) -> [Help 1]
-
-# Source code changes may not change dependencies, so it can go last.
-# Skip compiling tests since we don't want all the dependecies to be downloaded for plugins.
 COPY src ./src
-RUN mvn -f ./pom.xml clean package -Dmaven.test.skip -T 1C
+RUN --mount=type=cache,target=/root/.m2 mvn -B -q -f ./pom.xml clean package -Dmaven.test.skip -T 1C
 
-#
-# Server creation stage
-#
-FROM amazoncorretto:21
-
-# Host the server in a location that won't have permissions issues.
+# The container: MySQL's own image, with Java added.
+FROM mysql:8.4.0
+COPY --from=jar /usr/lib/jvm/java-21-amazon-corretto /opt/java
+ENV JAVA_HOME=/opt/java PATH=/opt/java/bin:$PATH
 WORKDIR /opt/server
-# Copy the wizet files first since they're so big and won't change often.
-COPY wz ./wz
-# Copy the JAR we build earlier.
-COPY --from=jar /opt/cosmic/target/Cosmic.jar ./Server.jar
-# Scripts are sourced on server startup, so you can mount over them for quicker redeploy.
+COPY --from=jar /opt/voyage-server/target/voyage-server.jar ./voyage-server.jar
+# Scripts and settings are read when the server starts; docker-compose.yml mounts this folder's own over them.
 COPY scripts ./scripts/
-# Config is read on server startup, so you can mount over it for quicker redeploy.
 COPY config.yaml ./
-# Default exposure, although not required if using docker compose.
-# This exposes the login server, and channels.
-# Format for channels: WWCC, where WW is 75 plus the world number and CC is 75 plus the channel number (both zero indexed).
-EXPOSE 8484 7575 7576 7577
-ENTRYPOINT ["java", "-jar", "./Server.jar"]
-
-
+COPY docker/start.sh /opt/start.sh
+RUN chmod 755 /opt/start.sh
+# The login server, world 1's channels (WWCC: WW is 75 plus the world number, CC 75 plus the channel number, both
+# from 0), the admin page and the database.
+EXPOSE 8484 7575 7576 7577 8585 3306
+ENTRYPOINT ["/opt/start.sh"]
+CMD []

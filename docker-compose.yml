@@ -1,32 +1,37 @@
-version: '3'
+# Voyage-Server in one container: MySQL and the game server, with its admin page. Settings for this machine (where
+# the assets are, the admin page's password) go in a .env file beside this one: see README.md.
 services:
-  maplestory:
+  voyage-server:
     build: .
-    depends_on:
-      - db
+    image: voyage-server
+    container_name: voyage-server
+    init: true
+    restart: on-failure
     ports:
-      # Login server
+      # The login server, and world 1's channels (WWCC: WW is 75 plus the world number, CC 75 plus the channel
+      # number, both from 0). Add a line for each further world's channels.
       - "8484:8484"
-      # Channels.
-      # Format: WWCC, where WW is 75 plus the world number and CC is 75 plus the channel number (both zero indexed).
-      # In this case, world 1 channels 1-3.
       - "7575-7577:7575-7577"
+      # The admin page (it stays off without a password).
+      - "${VOYAGE_ADMIN_PORT:-8585}:8585"
+      # The database, for tools on this machine only.
+      - "127.0.0.1:3307:3306"
+    # Time to shut down cleanly: the game server first (it saves), then the database.
+    stop_grace_period: 90s
     volumes:
-      # Config changes can be reloaded without rebuilding the image.
-      # Still requires a redeployment as they're sourced on startup.
+      # Settings and scripts are read when the server starts: a change takes a restart, not a rebuild.
       - ./config.yaml:/opt/server/config.yaml
       - ./scripts:/opt/server/scripts
-      - ./wz:/opt/server/wz
-    environment:
-      DB_HOST: "db" ## Remember if this is present it will OVERRIDE the host in the config.yaml, if you put here anything other than db, you'll need to change the config.yaml jdbc string to port 3307, and not port 3306
-    
-  db:
-    image: mysql:8.4.0
-    environment:
-      MYSQL_DATABASE: "cosmic"
-      MYSQL_ROOT_PASSWORD: ""
-      MYSQL_ALLOW_EMPTY_PASSWORD: yes
-    ports:
-      - "3307:3306"
-    volumes:
+      # The game data: the assets folder the Voyage extractor made, with its customs folder inside.
+      - ${VOYAGE_ASSETS:-../voyage-assets}:/opt/server/assets:ro
+      # The database's files.
       - ./database/docker-db-data:/var/lib/mysql
+    environment:
+      ASSETS_PATH: /opt/server/assets
+      # The database is in this container. This overrides the host in config.yaml's DB_URL_FORMAT.
+      DB_HOST: 127.0.0.1
+      ADMIN_PORT: "8585"
+      ADMIN_PASSWORD: ${VOYAGE_ADMIN_PASSWORD:-}
+      # Made on the first start, when the database folder is empty.
+      MYSQL_DATABASE: voyage
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"

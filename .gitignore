@@ -24,3 +24,12 @@ database/docker-pg-db-data
 
 # macOS files
 .DS_Store
+
+# The game data is the assets folder (ASSETS_PATH), never kept here
+/wz/
+# This machine's compose settings
+/docker-compose.override.yml
+# This machine's settings for docker compose (the admin page's password, where the assets are)
+.env
+# The admin page keeps a copy of the settings file before it changes it
+*.before-admin
