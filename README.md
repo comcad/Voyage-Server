@@ -183,7 +183,7 @@ Set `VOYAGE_ADMIN_PASSWORD` and open `http://<this machine>:8585`. Without a pas
 | Tab | What it is for |
 |---|---|
 | **Server** | Online or starting, uptime, who is playing in each world and channel, memory, where the game data comes from; **Restart** and **Shut down**; a notice to everyone in the game; the worlds (channels, rates, messages) and every other setting of `config.yaml`, changed in the file line by line with its comments kept; the console as it is written |
-| **Players** | Who is in the game, their level, job, map, world and channel |
+| **Players** | Who is in the game, their level, job, map, world and channel, with **Kick** and **Ban** for each; banned accounts' characters are listed too, with **Unban** |
 
 Restart ends the server with exit code 75, and the container (or `launch.sh` / `launch.bat`) starts it again; Shut down ends it. Saving settings keeps a copy of the file as it was (`config.yaml.before-admin`).
 

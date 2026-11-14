@@ -1,6 +1,7 @@
 package net.server.admin;
 
 import client.Character;
+import client.Job;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import config.YamlConfig;
@@ -11,6 +12,8 @@ import net.server.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import provider.DataProviderFactory;
+import server.TimerManager;
+import tools.DatabaseConnection;
 import tools.PacketCreator;
 
 import java.io.IOException;
@@ -23,19 +26,26 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 /**
  * The server's admin page, on its own port (ADMIN_PORT), behind a password (ADMIN_PASSWORD; the environment
  * variables of the same names win over config.yaml). Without a password it stays off. It shows how the server is
- * doing and who is playing, sends a notice to everyone, restarts or shuts the server down, changes the worlds and
+ * doing and who is playing (and kicks, bans and unbans them), sends a notice to everyone, restarts or shuts the server down, changes the worlds and
  * every other setting of config.yaml, and shows the console. The page itself is in the jar (resources/admin).
  */
 public final class AdminServer {
@@ -161,6 +171,9 @@ public final class AdminServer {
             switch (method + " " + route) {
                 case "GET /status" -> json(ex, 200, status());
                 case "GET /players" -> json(ex, 200, players());
+                case "POST /players/kick" -> kick(ex, body(ex));
+                case "POST /players/ban" -> ban(ex, body(ex));
+                case "POST /players/unban" -> unban(ex, body(ex));
                 case "GET /settings" -> json(ex, 200, Map.of("file", CONFIG.toAbsolutePath().normalize().toString(), "settings", AdminSettings.read(CONFIG)));
                 case "PUT /settings" -> {
                     int n = AdminSettings.write(CONFIG, body(ex));
@@ -275,24 +288,152 @@ public final class AdminServer {
         return s.isEmpty() ? s : java.lang.Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
-    private static List<Map<String, Object>> players() {
+    /**
+     * Who is in the game, and every character of a banned account (so it can be unbanned), each with whether it is
+     * online and whether its account is banned.
+     */
+    private static List<Map<String, Object>> players() throws SQLException {
         List<Map<String, Object>> out = new ArrayList<>();
-        for (World w : Server.getInstance().getWorlds()) {
-            for (Character c : w.getPlayerStorage().getAllCharacters()) {
-                Map<String, Object> p = new LinkedHashMap<>();
-                p.put("name", c.getName());
-                p.put("level", c.getLevel());
-                p.put("job", c.getJob() != null ? words(c.getJob().name()) : "");
-                p.put("map", c.getMapId());
-                p.put("mapName", c.getMap() != null ? c.getMap().getMapName() : "");
-                p.put("world", w.getId() < GameConstants.WORLD_NAMES.length ? GameConstants.WORLD_NAMES[w.getId()] : String.valueOf(w.getId()));
-                p.put("channel", c.getClient() != null ? c.getClient().getChannel() : 0);
-                p.put("gm", c.gmLevel());
-                out.add(p);
+        Map<Integer, String> banned = new HashMap<>();
+        Set<String> listed = new HashSet<>();
+        try (Connection con = DatabaseConnection.getConnection()) {
+            try (PreparedStatement ps = con.prepareStatement("SELECT id, banreason FROM accounts WHERE banned = 1");
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    banned.put(rs.getInt(1), rs.getString(2));
+                }
+            }
+            for (World w : Server.getInstance().getWorlds()) {
+                for (Character c : w.getPlayerStorage().getAllCharacters()) {
+                    Map<String, Object> p = new LinkedHashMap<>();
+                    p.put("name", c.getName());
+                    p.put("level", c.getLevel());
+                    p.put("job", c.getJob() != null ? words(c.getJob().name()) : "");
+                    p.put("map", c.getMapId());
+                    p.put("mapName", c.getMap() != null ? c.getMap().getMapName() : "");
+                    p.put("world", worldName(w.getId()));
+                    p.put("channel", c.getClient() != null ? c.getClient().getChannel() : 0);
+                    p.put("gm", c.gmLevel());
+                    p.put("online", true);
+                    p.put("banned", banned.containsKey(c.getAccountID()));
+                    p.put("reason", banned.getOrDefault(c.getAccountID(), ""));
+                    out.add(p);
+                    listed.add(c.getName().toLowerCase(Locale.ROOT));
+                }
+            }
+            if (!banned.isEmpty()) {
+                try (PreparedStatement ps = con.prepareStatement("SELECT c.name, c.level, c.job, c.map, c.world, c.gm, c.accountid FROM characters c JOIN accounts a ON a.id = c.accountid WHERE a.banned = 1");
+                     ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String name = rs.getString("name");
+                        if (!listed.add(name.toLowerCase(Locale.ROOT))) {
+                            continue;
+                        }
+                        Job job = Job.getById(rs.getInt("job"));
+                        Map<String, Object> p = new LinkedHashMap<>();
+                        p.put("name", name);
+                        p.put("level", rs.getInt("level"));
+                        p.put("job", job != null ? words(job.name()) : "");
+                        p.put("map", rs.getInt("map"));
+                        p.put("mapName", "");
+                        p.put("world", worldName(rs.getInt("world")));
+                        p.put("channel", 0);
+                        p.put("gm", rs.getInt("gm"));
+                        p.put("online", false);
+                        p.put("banned", true);
+                        p.put("reason", banned.getOrDefault(rs.getInt("accountid"), ""));
+                        out.add(p);
+                    }
+                }
             }
         }
-        out.sort((a, b) -> String.valueOf(a.get("name")).compareToIgnoreCase(String.valueOf(b.get("name"))));
+        out.sort((a, b) -> a.get("online") != b.get("online") ? (Boolean) a.get("online") ? -1 : 1
+                : String.valueOf(a.get("name")).compareToIgnoreCase(String.valueOf(b.get("name"))));
         return out;
+    }
+
+    private static String worldName(int id) {
+        return id >= 0 && id < GameConstants.WORLD_NAMES.length ? GameConstants.WORLD_NAMES[id] : String.valueOf(id);
+    }
+
+    /** A character in the game by its name, or null. */
+    private static Character online(String name) {
+        for (World w : Server.getInstance().getWorlds()) {
+            Character c = w.getPlayerStorage().getCharacterByName(name);
+            if (c != null) {
+                return c;
+            }
+        }
+        return null;
+    }
+
+    private static String nameIn(Map<String, Object> body) {
+        Object name = body.get("name");
+        if (!(name instanceof String s) || s.isBlank() || s.length() > 13) {
+            throw new IllegalArgumentException("Which character?");
+        }
+        return s.trim();
+    }
+
+    /** Disconnects a player, as !dc does. */
+    private static void kick(HttpExchange ex, Map<String, Object> body) throws IOException {
+        String name = nameIn(body);
+        Character c = online(name);
+        if (c == null) {
+            throw new IllegalArgumentException(name + " is not in the game.");
+        }
+        c.getClient().disconnect(false, false);
+        log.warn("Admin page: kicked {}", c.getName());
+        json(ex, 200, Map.of("ok", true));
+    }
+
+    /**
+     * Bans a character's account (every character on it), as !ban does: a player in the game is told why and is
+     * disconnected five seconds later, and the machine ids their game sent are banned too. Unlike !ban it bans no IP
+     * address: players of the web client all reach the server from the address of the client's relay.
+     */
+    private static void ban(HttpExchange ex, Map<String, Object> body) throws IOException {
+        String name = nameIn(body);
+        String given = body.get("reason") instanceof String s ? s.trim() : "";
+        if (given.length() > 100 || given.contains("\n")) {
+            throw new IllegalArgumentException("A reason is one line of up to 100 characters.");
+        }
+        String reason = "Banned from the admin page" + (given.isEmpty() ? "" : ": " + given);
+        Character c = online(name);
+        if (c != null) {
+            c.getClient().banMacs();
+            c.ban(reason);
+            c.yellowMessage("You have been banned. " + (given.isEmpty() ? "" : "Reason: " + given));
+            Character gone = c;
+            TimerManager.getInstance().schedule(() -> gone.getClient().disconnect(false, false), 5000);
+        } else if (!Character.ban(name, reason, false)) {
+            throw new IllegalArgumentException("There is no character called " + name + ".");
+        }
+        log.warn("Admin page: banned {} ({})", name, reason);
+        json(ex, 200, Map.of("ok", true));
+    }
+
+    /** Lifts the ban on a character's account and the machine and address bans that came with it, as !unban does. */
+    private static void unban(HttpExchange ex, Map<String, Object> body) throws IOException, SQLException {
+        String name = nameIn(body);
+        int aid = Character.getAccountIdByName(name);
+        if (aid <= 0) {
+            throw new IllegalArgumentException("There is no character called " + name + ".");
+        }
+        try (Connection con = DatabaseConnection.getConnection()) {
+            try (PreparedStatement ps = con.prepareStatement("UPDATE accounts SET banned = -1 WHERE id = ?")) {
+                ps.setInt(1, aid);
+                ps.executeUpdate();
+            }
+            for (String table : new String[] {"ipbans", "macbans"}) {
+                try (PreparedStatement ps = con.prepareStatement("DELETE FROM " + table + " WHERE aid = ?")) {
+                    ps.setString(1, String.valueOf(aid));
+                    ps.executeUpdate();
+                }
+            }
+        }
+        log.warn("Admin page: unbanned {}", name);
+        json(ex, 200, Map.of("ok", true));
     }
 
     private static void notice(HttpExchange ex, Map<String, Object> body) throws IOException {
