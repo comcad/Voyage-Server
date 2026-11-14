@@ -1,15 +1,15 @@
 <div align="center">
 
-<img src="https://github.com/user-attachments/assets/f3327f7f-5a19-403d-b881-d540287cdf14" width="120" height="120" alt="Voyage MapleStory game server logo" />
+<img src="https://github.com/user-attachments/assets/f3327f7f-5a19-403d-b881-d540287cdf14" width="120" height="120" alt="Voyage Voyage-Client game server logo" />
 
-# Voyage Server: MapleStory Game Server
+# Voyage Server: Voyage-Client Game Server
 
-**An open-source MapleStory v83 (GMS) game server that reads the Voyage assets, with an admin page in your browser.**
+**An open-source Voyage-Client v83 (GMS) game server that reads the Voyage assets, with an admin page in your browser.**
 Java · Part of Voyage, with Voyage-Client and Voyage-Editor
 
 <br />
 
-![MapleStory v83](https://img.shields.io/badge/MapleStory-v83%20GMS-orange?style=for-the-badge)
+![Voyage-Client v83](https://img.shields.io/badge/Voyage-Client-v83%20GMS-orange?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-alpha-yellow?style=for-the-badge)
 ![License](https://img.shields.io/github/license/comcad/Voyage-Server?style=for-the-badge)
 
@@ -25,7 +25,7 @@ Java · Part of Voyage, with Voyage-Client and Voyage-Editor
 
 <br />
 
-**Voyage Server** is an open-source **MapleStory server** for **v83 (GMS)**: a fork of [Cosmic](https://github.com/P0nk/Cosmic) that reads the game data from the assets folder the [Voyage WZ Extractor](https://github.com/comcad/Voyage-Wz-Extractor) makes, the same folder [Voyage-Client](https://github.com/comcad/Voyage-Client) serves and [Voyage-Editor](https://github.com/comcad/Voyage-Editor) publishes into. It runs with its database in one Docker container and has an admin page of its own.
+**Voyage Server** is an open-source **Voyage-Client server**: a fork of [Cosmic](https://github.com/P0nk/Cosmic) that reads the game data from the assets folder the [Voyage WZ Extractor](https://github.com/comcad/Voyage-Wz-Extractor) makes, the same folder [Voyage-Client](https://github.com/comcad/Voyage-Client) serves and [Voyage-Editor](https://github.com/comcad/Voyage-Editor) publishes into. It runs with its database in one Docker container and has an admin page of its own.
 
 The repository contains everything needed to deploy it except the game data: the server's source, its scripts and settings, the database setup, and the Docker files. You bring the assets folder, made from your own game files.
 
@@ -50,7 +50,7 @@ voyage-assets/                 # made by the extractor from your own .wz files
 Voyage-Client/  Voyage-Server/  Voyage-Editor/    # each pointed at ../voyage-assets
 ```
 
-## ✨ Features of the MapleStory Server
+## ✨ Features of the Voyage-Client Server
 
 | | Area | What's included |
 |---|---|---|
@@ -63,7 +63,7 @@ Voyage-Client/  Voyage-Server/  Voyage-Editor/    # each pointed at ../voyage-as
 | 🌍 | **Worlds & rates** | Worlds, channels, rates and messages, changed from the admin page or `config.yaml` |
 | 🔄 | **Close to upstream** | Only what Voyage needs is changed, so updates from upstream can be brought in |
 
-## 🧩 How the MapleStory Server Works
+## 🧩 How the Voyage-Client Server Works
 
 ```
 ┌──────────────────┐   WebSocket   ┌──────────────────┐     TCP     ┌──────────────────────────┐
@@ -81,11 +81,11 @@ Players' browsers reach the server through Voyage-Client, which relays them to i
 
 ## 📋 Requirements
 
-- A folder of MapleStory v83 GMS `*.wz` files (your own), extracted with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor)
+- A folder of Voyage-Client v83 GMS `*.wz` files (your own), extracted with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor)
 - **Either** Docker (with Compose) **or** Java 21 and MySQL 8
 - [Voyage-Client](https://github.com/comcad/Voyage-Client), to play in a browser
 
-## 🚀 Quick Start: Deploy the MapleStory Server
+## 🚀 Quick Start: Deploy the Voyage-Client Server
 
 ### 1. Clone the repo
 
@@ -99,7 +99,7 @@ cd Voyage-Server
 The WZ extractor lives in its own repo: **[Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor)** (pure Node, zero dependencies).
 
 > [!NOTE]
-> Use your own MapleStory v83 GMS `.wz` files.
+> Use your own Voyage-Client v83 GMS `.wz` files.
 
 ```sh
 cd ..                                # beside Voyage-Server, not inside it
@@ -228,7 +228,7 @@ Voyage-Server/
 ## ❓ FAQ
 
 <details>
-<summary><b>What is a MapleStory server emulator?</b></summary>
+<summary><b>What is a Voyage-Client server emulator?</b></summary>
 
 <br />
 
@@ -241,7 +241,7 @@ A program that does what the official game servers do (logins, worlds, maps, mon
 
 <br />
 
-No. You supply your own MapleStory v83 GMS `.wz` files and extract them with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor); the server, the client and the editor all read that folder.
+No. You supply your own Voyage-Client v83 GMS `.wz` files and extract them with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor); the server, the client and the editor all read that folder.
 
 </details>
 
@@ -302,7 +302,7 @@ Questions, feedback, or want to help test? Come hang out on Discord.
 **Voyage Server is an unofficial, fan-made, non-commercial project. It is not affiliated with, endorsed by, sponsored by, or connected to Nexon Korea Corporation, Nexon America Inc., or any of their subsidiaries or affiliates ("Nexon").**
 
 ### Trademarks & Copyright
-MapleStory, its name, logos, characters, artwork, music, sound effects, text, game data, and all related assets are the property of Nexon and its licensors. All trademarks and copyrights belong to their respective owners. The name "MapleStory" is used in this repository for identification and compatibility description only and does not imply any association with Nexon.
+Voyage-Client, its name, logos, characters, artwork, music, sound effects, text, game data, and all related assets are the property of Nexon and its licensors. All trademarks and copyrights belong to their respective owners. The name "Voyage-Client" is used in this repository for identification and compatibility description only and does not imply any association with Nexon.
 
 ### No Game Assets Included
 This repository contains **no** copyrighted Nexon assets. That includes `.wz` files, extracted images, audio, maps, and any other game data. It contains only original source code written by the contributors.
@@ -335,6 +335,6 @@ If you are a rights holder and believe this repository infringes your rights, pl
 
 <div align="right">
 
-[⬆ Back to top](#voyage-server-maplestory-game-server)
+[⬆ Back to top](#voyage-server-Voyage-Client-game-server)
 
 </div>
