@@ -375,13 +375,17 @@ public final class AdminServer {
         return s.trim();
     }
 
-    /** Disconnects a player: logs the character out and closes their connection, so their game ends too. */
+    /**
+     * Disconnects a player: tells them they were kicked (the game's notice for being cut off), logs the character out
+     * and closes their connection, so their game ends too.
+     */
     private static void kick(HttpExchange ex, Map<String, Object> body) throws IOException {
         String name = nameIn(body);
         Character c = online(name);
         if (c == null) {
             throw new IllegalArgumentException(name + " is not in the game.");
         }
+        c.sendPacket(PacketCreator.sendPolice("You have been kicked from the server."));
         dropConnection(c.getClient());
         log.warn("Admin page: kicked {}", c.getName());
         json(ex, 200, Map.of("ok", true));
