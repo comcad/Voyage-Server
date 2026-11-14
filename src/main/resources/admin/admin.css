@@ -289,3 +289,16 @@ textarea { border: 1px solid var(--border); background: var(--surface); border-r
 .table.worlds tfoot th, .table.worlds tfoot td { border-top: 1px solid var(--border); padding-top: 8px; }
 .town-maps { display: flex; flex-wrap: wrap; gap: 4px 14px; white-space: normal; }
 .town-maps label { display: inline-flex; align-items: center; gap: 4px; }
+
+/* the Players tab: search and filters over the list, columns that sort, pages */
+.filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 12px; }
+.filters .grow { flex: 1 1 220px; }
+.filters input[type="number"] { width: 72px; }
+th button.sort { border: 0; background: none; padding: 0; border-radius: 4px; color: inherit; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+th button.sort:hover { background: none; color: var(--ink); }
+th button.sort.on { color: var(--ink); }
+th button.sort .arrow { display: inline-block; width: 9px; font-size: 9px; }
+.pager { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.pager:empty { display: none; }
+/* Kick and Ban stay in view when the list is wider than the window and scrolls sideways */
+th.actions, td.actions { position: sticky; right: 0; background: var(--surface); padding-left: 8px; padding-right: 0; }

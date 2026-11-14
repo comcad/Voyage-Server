@@ -1,14 +1,61 @@
 /**
- * Players: who is in the game now, where, on which world and channel, with Kick and Ban for each. Banned accounts'
- * characters are listed too, marked banned, so their ban can be lifted: their button is Unban.
+ * Players: every character, online or not, with a search, filters, and sorting by any column; where each is, on which
+ * world and channel, with Kick and Ban (Unban for a banned account) for each. The server does the searching and
+ * sorting and sends one page at a time, so this stays quick with many characters.
  */
-import { h, fill, table, toast, dialog } from './ui.js';
+import { h, fill, toast, dialog, settled, fmt } from './ui.js';
 import { api } from './api.js';
 
+const SIZE = 50;
+const STATUS = [['', 'Everyone'], ['online', 'Online'], ['offline', 'Offline'], ['banned', 'Banned']];
+const JOBS = [['', 'All jobs'], ['beginner', 'Beginner'], ['warrior', 'Warrior'], ['magician', 'Magician'], ['bowman', 'Bowman'],
+  ['thief', 'Thief'], ['pirate', 'Pirate'], ['gm', 'GM']];
+const GMS = [['', 'GMs and players'], ['yes', 'GMs only'], ['no', 'No GMs']];
+const FILTERS = ['q', 'status', 'world', 'job', 'gm', 'min', 'max'];
+// the first click on a column: names and places A to Z, numbers and times highest and latest first
+const FIRST_DESC = new Set(['level', 'channel', 'seen']);
+const DEFAULTS = { q: '', status: '', world: '', job: '', gm: '', min: '', max: '', sort: 'status', dir: 'asc' };
+const KEY = 'voyage-admin-players';
+
+/** The filters and order this browser used last (not the search). */
+function remembered() {
+  try { return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(KEY) || '{}'), q: '' }; } catch { return { ...DEFAULTS }; }
+}
+function remember(v) {
+  try { localStorage.setItem(KEY, JSON.stringify({ ...v, q: undefined })); } catch { /* not kept: fine */ }
+}
+
 export function playersTab(host) {
-  let timer = null, asking = false;
-  const list = h('div'), count = h('span', { class: 'muted' });
-  host.append(h('section', { class: 'panel' }, h('header', { class: 'panel-head' }, h('h2', null, 'Players'), count), list));
+  let timer = null, asking = false, seq = 0, page = 0, worldsKey = '';
+  const v = remembered();
+  const count = h('span', { class: 'muted' }), list = h('div'), pager = h('div', { class: 'pager' });
+
+  const changed = () => { page = 0; remember(v); clearBtn.hidden = !FILTERS.some((k) => v[k]); refresh().catch(() => {}); };
+  const later = settled(changed, 250);
+  const select = (key, options, label) => {
+    const el = h('select', { 'aria-label': label, onchange: () => { v[key] = el.value; changed(); } },
+      options.map(([value, text]) => h('option', { value }, text)));
+    el.value = v[key];
+    return el;
+  };
+  const search = h('input', { type: 'search', class: 'grow', maxlength: 30, value: v.q, placeholder: 'Search characters or accounts',
+    'aria-label': 'Search characters or accounts', oninput: () => { v.q = search.value.trim(); later(); } });
+  const level = (key, hint) => h('input', { type: 'number', min: 1, max: 250, value: v[key], placeholder: hint, 'aria-label': `Level ${hint}`,
+    oninput: (e) => { v[key] = e.target.value; later(); } });
+  const status = select('status', STATUS, 'Status'), job = select('job', JOBS, 'Job'), gm = select('gm', GMS, 'GM');
+  const world = select('world', [['', 'All worlds']], 'World');
+  const min = level('min', 'from'), max = level('max', 'to');
+  const clearBtn = h('button', { type: 'button', class: 'quiet', hidden: !FILTERS.some((k) => v[k]), onclick: () => {
+    for (const k of FILTERS) v[k] = '';
+    search.value = ''; min.value = ''; max.value = '';
+    for (const el of [status, world, job, gm]) el.value = '';
+    changed();
+  } }, 'Clear filters');
+
+  host.append(h('section', { class: 'panel' },
+    h('header', { class: 'panel-head' }, h('h2', null, 'Players'), count),
+    h('div', { class: 'filters' }, search, status, world, job, h('label', null, 'Level', min, '–', max), gm, clearBtn),
+    list, pager));
 
   /** A window asking to go on; with `reason`, a line for one. Resolves { reason } to go on, or nothing. */
   const ask = (title, text, go, reason) => dialog(title, (close) => {
@@ -35,27 +82,71 @@ export function playersTab(host) {
     refresh().catch(() => {});
   };
 
+  const sortBy = (key) => {
+    if (v.sort === key) v.dir = v.dir === 'asc' ? 'desc' : 'asc';
+    else { v.sort = key; v.dir = FIRST_DESC.has(key) ? 'desc' : 'asc'; }
+    changed();
+  };
+  const COLUMNS = [
+    { key: 'name', name: 'Character', cell: (p) => (p.gm > 0 ? [p.name, ' ', h('span', { class: 'chip' }, `GM ${p.gm}`)] : p.name) },
+    { key: 'account', name: 'Account', cell: (p) => h('span', { class: 'muted' }, p.account) },
+    { key: 'level', name: 'Level', num: true, cell: (p) => p.level },
+    { key: 'job', name: 'Job', cell: (p) => p.job },
+    { key: 'map', name: 'Map', cell: (p) => (p.mapName ? `${p.mapName} (${p.map})` : String(p.map)) },
+    { key: 'world', name: 'World', cell: (p) => p.world },
+    { key: 'channel', name: 'Channel', num: true, cell: (p) => (p.online ? p.channel : '-') },
+    { key: 'status', name: 'Status', cell: (p) => [
+      p.online ? h('span', { class: 'chip ok' }, 'online') : h('span', { class: 'chip off' }, 'offline'),
+      p.banned ? [' ', h('span', { class: 'chip off', title: p.reason || '' }, 'banned')] : null] },
+    { key: 'seen', name: 'Last online', cell: (p) => (p.online ? 'now' : p.seen ? h('span', { title: fmt.day(p.seen) }, fmt.ago(p.seen)) : h('span', { class: 'muted' }, 'never')) },
+    { name: '', cls: 'actions', cell: (p) => h('span', { style: { display: 'inline-flex', gap: '6px' } },
+      h('button', { type: 'button', class: 'quiet', disabled: !p.online, title: p.online ? null : 'Not in the game', onclick: () => act('kick', p) }, 'Kick'),
+      p.banned
+        ? h('button', { type: 'button', class: 'quiet', onclick: () => act('unban', p) }, 'Unban')
+        : h('button', { type: 'button', class: 'quiet danger', onclick: () => act('ban', p) }, 'Ban')) },
+  ];
+  const header = (c) => {
+    if (!c.key) return h('th', { class: c.cls }, '');
+    const on = v.sort === c.key, asc = v.dir === 'asc';
+    return h('th', { class: c.num ? 'num' : null, 'aria-sort': on ? (asc ? 'ascending' : 'descending') : null },
+      h('button', { type: 'button', class: `sort${on ? ' on' : ''}`, 'data-key': c.key, title: `Sort by ${c.name.toLowerCase()}`, onclick: () => sortBy(c.key) },
+        c.name, h('span', { class: 'arrow', 'aria-hidden': 'true' }, on ? (asc ? '▲' : '▼') : '')));
+  };
+
   const refresh = async () => {
     if (asking) return;   // (not while a window is open over the list)
-    const players = await api('/players');
-    const on = players.filter((p) => p.online).length, banned = players.filter((p) => p.banned).length;
-    count.textContent = `${on} playing${banned ? `, ${banned} banned` : ''}`;
-    fill(list, table([
-      { name: 'Character', cell: (p) => (p.gm > 0 ? [p.name, ' ', h('span', { class: 'chip' }, `GM ${p.gm}`)] : p.name) },
-      { name: 'Level', num: true, cell: (p) => p.level },
-      { name: 'Job', cell: (p) => p.job },
-      { name: 'Map', cell: (p) => (p.mapName ? `${p.mapName} (${p.map})` : String(p.map)) },
-      { name: 'World', cell: (p) => p.world },
-      { name: 'Channel', num: true, cell: (p) => (p.online ? p.channel : '-') },
-      { name: 'Status', cell: (p) => [
-        p.online ? h('span', { class: 'chip ok' }, 'online') : h('span', { class: 'chip off' }, 'offline'),
-        p.banned ? [' ', h('span', { class: 'chip off', title: p.reason || '' }, 'banned')] : null] },
-      { name: '', cell: (p) => h('span', { style: { display: 'inline-flex', gap: '6px' } },
-        h('button', { type: 'button', class: 'quiet', disabled: !p.online, title: p.online ? null : 'Not in the game', onclick: () => act('kick', p) }, 'Kick'),
-        p.banned
-          ? h('button', { type: 'button', class: 'quiet', onclick: () => act('unban', p) }, 'Unban')
-          : h('button', { type: 'button', class: 'quiet danger', onclick: () => act('ban', p) }, 'Ban')) },
-    ], players, 'Nobody is playing, and nobody is banned.'));
+    const mine = ++seq;
+    const params = new URLSearchParams({ sort: v.sort, dir: v.dir, page: String(page), size: String(SIZE) });
+    for (const k of FILTERS) if (v[k]) params.set(k, v[k]);
+    const d = await api(`/players?${params}`);
+    if (mine !== seq) return;   // an older answer, after a newer question
+    page = d.page;
+
+    // the worlds there are, as they come; a world remembered from before that is gone shows all of them
+    const key = d.worlds.map((w) => w.id).join(',');
+    if (key !== worldsKey) {
+      worldsKey = key;
+      fill(world, h('option', { value: '' }, 'All worlds'), d.worlds.map((w) => h('option', { value: String(w.id) }, w.name)));
+      world.value = d.worlds.some((w) => String(w.id) === v.world) ? v.world : '';
+      if (world.value !== v.world) { v.world = ''; changed(); return; }
+    }
+
+    count.textContent = `${fmt.count(d.characters)} character${d.characters === 1 ? '' : 's'}, ${d.online} playing${d.banned ? `, ${d.banned} banned` : ''}`;
+    const focused = document.activeElement?.closest?.('th button.sort')?.dataset.key;
+    if (!d.players.length) {
+      fill(list, h('p', { class: 'empty' }, d.characters ? 'No character matches the search and filters.' : 'There are no characters yet.'));
+    } else {
+      fill(list, h('div', { class: 'table-wrap' }, h('table', null,
+        h('thead', null, h('tr', null, COLUMNS.map(header))),
+        h('tbody', null, d.players.map((p) => h('tr', null, COLUMNS.map((c) => h('td', { class: c.cls || (c.num ? 'num' : null) }, c.cell(p)))))))));
+      if (focused) list.querySelector(`th button[data-key="${focused}"]`)?.focus();
+    }
+    const pages = Math.max(1, Math.ceil(d.total / d.size)), from = d.page * d.size;
+    fill(pager, d.total > d.size ? [
+      h('span', { class: 'muted' }, `${(from + 1).toLocaleString('en-US')}–${Math.min(d.total, from + d.size).toLocaleString('en-US')} of ${d.total.toLocaleString('en-US')}`),
+      h('button', { type: 'button', disabled: d.page === 0, onclick: () => { page--; refresh().catch(() => {}); } }, 'Previous'),
+      h('button', { type: 'button', disabled: d.page >= pages - 1, onclick: () => { page++; refresh().catch(() => {}); } }, 'Next'),
+    ] : d.total < d.characters ? h('span', { class: 'muted' }, `${d.total} of ${fmt.count(d.characters)} match`) : null);
   };
   return {
     show() { refresh().catch(() => {}); timer = setInterval(() => refresh().catch(() => {}), 5000); },

@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import provider.DataProviderFactory;
 import server.TimerManager;
+import server.maps.MapFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
@@ -30,14 +31,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -170,7 +173,7 @@ public final class AdminServer {
             }
             switch (method + " " + route) {
                 case "GET /status" -> json(ex, 200, status());
-                case "GET /players" -> json(ex, 200, players());
+                case "GET /players" -> json(ex, 200, players(ex));
                 case "POST /players/kick" -> kick(ex, body(ex));
                 case "POST /players/ban" -> ban(ex, body(ex));
                 case "POST /players/unban" -> unban(ex, body(ex));
@@ -288,68 +291,169 @@ public final class AdminServer {
         return s.isEmpty() ? s : java.lang.Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 
+    /** A character on the Players tab: from the database, with what the game knows now when it is online. */
+    private record Row(String name, String account, int level, int job, int map, String mapName, int world, int channel,
+                       int gm, boolean online, boolean banned, String reason, Long seen) {}
+
+    private static final List<String> SORTS = List.of("name", "account", "level", "job", "map", "world", "channel", "status", "seen");
+
     /**
-     * Who is in the game, and every character of a banned account (so it can be unbanned), each with whether it is
-     * online and whether its account is banned.
+     * Every character, online or not, for the Players tab: those matching the search ({@code q}, part of a character's
+     * or account's name) and the filters ({@code status} online, offline or banned; {@code world}; {@code job} class;
+     * {@code gm} yes or no; levels {@code min} to {@code max}), sorted by {@code sort} ({@code dir} asc or desc), one
+     * {@code page} of {@code size} at a time. A character in the game shows what the game knows now (its level, job and
+     * map may not be saved yet).
      */
-    private static List<Map<String, Object>> players() throws SQLException {
-        List<Map<String, Object>> out = new ArrayList<>();
-        Map<Integer, String> banned = new HashMap<>();
-        Set<String> listed = new HashSet<>();
-        try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("SELECT id, banreason FROM accounts WHERE banned = 1");
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    banned.put(rs.getInt(1), rs.getString(2));
-                }
+    private static Map<String, Object> players(HttpExchange ex) throws SQLException {
+        String q = text(query(ex, "q"), 30).toLowerCase(Locale.ROOT);
+        String status = text(query(ex, "status"), 10), world = text(query(ex, "world"), 5), job = text(query(ex, "job"), 10);
+        String gm = text(query(ex, "gm"), 5), sort = text(query(ex, "sort"), 10);
+        long min = number(query(ex, "min")), max = number(query(ex, "max"));
+        boolean desc = "desc".equals(query(ex, "dir"));
+        long given = number(query(ex, "size"));
+        int size = (int) (given <= 0 ? 50 : Math.min(200, given));
+        if (!SORTS.contains(sort)) {
+            sort = "status";
+        }
+
+        Map<Integer, Character> live = new HashMap<>();
+        for (World w : Server.getInstance().getWorlds()) {
+            for (Character c : w.getPlayerStorage().getAllCharacters()) {
+                live.put(c.getId(), c);
             }
-            for (World w : Server.getInstance().getWorlds()) {
-                for (Character c : w.getPlayerStorage().getAllCharacters()) {
-                    Map<String, Object> p = new LinkedHashMap<>();
-                    p.put("name", c.getName());
-                    p.put("level", c.getLevel());
-                    p.put("job", c.getJob() != null ? words(c.getJob().name()) : "");
-                    p.put("map", c.getMapId());
-                    p.put("mapName", c.getMap() != null ? c.getMap().getMapName() : "");
-                    p.put("world", worldName(w.getId()));
-                    p.put("channel", c.getClient() != null ? c.getClient().getChannel() : 0);
-                    p.put("gm", c.gmLevel());
-                    p.put("online", true);
-                    p.put("banned", banned.containsKey(c.getAccountID()));
-                    p.put("reason", banned.getOrDefault(c.getAccountID(), ""));
-                    out.add(p);
-                    listed.add(c.getName().toLowerCase(Locale.ROOT));
-                }
-            }
-            if (!banned.isEmpty()) {
-                try (PreparedStatement ps = con.prepareStatement("SELECT c.name, c.level, c.job, c.map, c.world, c.gm, c.accountid FROM characters c JOIN accounts a ON a.id = c.accountid WHERE a.banned = 1");
-                     ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        String name = rs.getString("name");
-                        if (!listed.add(name.toLowerCase(Locale.ROOT))) {
-                            continue;
-                        }
-                        Job job = Job.getById(rs.getInt("job"));
-                        Map<String, Object> p = new LinkedHashMap<>();
-                        p.put("name", name);
-                        p.put("level", rs.getInt("level"));
-                        p.put("job", job != null ? words(job.name()) : "");
-                        p.put("map", rs.getInt("map"));
-                        p.put("mapName", "");
-                        p.put("world", worldName(rs.getInt("world")));
-                        p.put("channel", 0);
-                        p.put("gm", rs.getInt("gm"));
-                        p.put("online", false);
-                        p.put("banned", true);
-                        p.put("reason", banned.getOrDefault(rs.getInt("accountid"), ""));
-                        out.add(p);
-                    }
+        }
+        List<Row> all = new ArrayList<>();
+        Map<Integer, String> mapNames = new HashMap<>();
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT c.id, c.name, c.level, c.job, c.map, c.world, c.gm, c.lastLogoutTime, c.createdate, a.name, a.banned, a.banreason FROM characters c JOIN accounts a ON a.id = c.accountid");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Character c = live.get(rs.getInt(1));
+                String account = Objects.toString(rs.getString(10), "");
+                boolean banned = rs.getInt(11) == 1;
+                String reason = banned ? Objects.toString(rs.getString(12), "") : "";
+                if (c != null) {
+                    all.add(new Row(c.getName(), account, c.getLevel(), c.getJob() != null ? c.getJob().getId() : rs.getInt(4),
+                            c.getMapId(), c.getMap() != null ? c.getMap().getMapName() : "", c.getWorld(),
+                            c.getClient() != null ? c.getClient().getChannel() : 0, c.gmLevel(), true, banned, reason, null));
+                } else {
+                    // a character that never logged out still has the column's default, from before it was made
+                    Timestamp out = rs.getTimestamp(8), made = rs.getTimestamp(9);
+                    Long seen = out != null && (made == null || !out.before(made)) ? out.getTime() : null;
+                    int map = rs.getInt(5);
+                    all.add(new Row(rs.getString(2), account, rs.getInt(3), rs.getInt(4), map,
+                            mapNames.computeIfAbsent(map, MapFactory::loadPlaceName), rs.getInt(6), 0, rs.getInt(7), false,
+                            banned, reason, seen));
                 }
             }
         }
-        out.sort((a, b) -> a.get("online") != b.get("online") ? (Boolean) a.get("online") ? -1 : 1
-                : String.valueOf(a.get("name")).compareToIgnoreCase(String.valueOf(b.get("name"))));
+
+        List<Row> rows = new ArrayList<>();
+        for (Row r : all) {
+            boolean keep = (q.isEmpty() || r.name().toLowerCase(Locale.ROOT).contains(q) || r.account().toLowerCase(Locale.ROOT).contains(q))
+                    && switch (status) {
+                        case "online" -> r.online();
+                        case "offline" -> !r.online();
+                        case "banned" -> r.banned();
+                        default -> true;
+                    }
+                    && (world.isEmpty() || world.equals(String.valueOf(r.world())))
+                    && (job.isEmpty() || job.equals(jobClass(r.job())))
+                    && switch (gm) {
+                        case "yes" -> r.gm() > 0;
+                        case "no" -> r.gm() == 0;
+                        default -> true;
+                    }
+                    && (min <= 0 || r.level() >= min) && (max <= 0 || r.level() <= max);
+            if (keep) {
+                rows.add(r);
+            }
+        }
+        Comparator<Row> by = switch (sort) {
+            case "name" -> Comparator.comparing((Row r) -> r.name().toLowerCase(Locale.ROOT));
+            case "account" -> Comparator.comparing((Row r) -> r.account().toLowerCase(Locale.ROOT));
+            case "level" -> Comparator.comparingInt(Row::level);
+            case "job" -> Comparator.comparing((Row r) -> jobName(r.job()).toLowerCase(Locale.ROOT));
+            case "map" -> Comparator.comparing((Row r) -> r.mapName().toLowerCase(Locale.ROOT)).thenComparingInt(Row::map);
+            case "world" -> Comparator.comparingInt(Row::world);
+            case "channel" -> Comparator.comparingInt(Row::channel);
+            case "seen" -> Comparator.comparingLong((Row r) -> r.online() ? Long.MAX_VALUE : r.seen() == null ? Long.MIN_VALUE : r.seen());
+            default -> Comparator.comparingInt((Row r) -> r.online() ? 0 : r.banned() ? 2 : 1);   // online, offline, banned
+        };
+        if (desc) {
+            by = by.reversed();
+        }
+        rows.sort(by.thenComparing((Row r) -> r.name().toLowerCase(Locale.ROOT)));
+
+        int pages = Math.max(1, (rows.size() + size - 1) / size);
+        int page = (int) Math.min(Math.max(0, number(query(ex, "page"))), pages - 1);
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (Row r : rows.subList(page * size, Math.min(rows.size(), (page + 1) * size))) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("name", r.name());
+            m.put("account", r.account());
+            m.put("level", r.level());
+            m.put("job", jobName(r.job()));
+            m.put("map", r.map());
+            m.put("mapName", r.mapName());
+            m.put("world", worldName(r.world()));
+            m.put("channel", r.channel());
+            m.put("gm", r.gm());
+            m.put("online", r.online());
+            m.put("banned", r.banned());
+            m.put("reason", r.reason());
+            m.put("seen", r.seen());
+            list.add(m);
+        }
+        Set<Integer> worldIds = new java.util.TreeSet<>();
+        for (World w : Server.getInstance().getWorlds()) {
+            worldIds.add(w.getId());
+        }
+        for (Row r : all) {
+            worldIds.add(r.world());
+        }
+        List<Map<String, Object>> worlds = new ArrayList<>();
+        for (int id : worldIds) {
+            worlds.add(Map.of("id", id, "name", worldName(id)));
+        }
+
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("characters", all.size());
+        out.put("online", all.stream().filter(Row::online).count());
+        out.put("banned", all.stream().filter(Row::banned).count());
+        out.put("total", rows.size());
+        out.put("page", page);
+        out.put("size", size);
+        out.put("worlds", worlds);
+        out.put("players", list);
         return out;
+    }
+
+    private static String text(String s, int most) {
+        String t = s == null ? "" : s.trim();
+        return t.length() > most ? t.substring(0, most) : t;
+    }
+
+    private static String jobName(int id) {
+        Job job = Job.getById(id);
+        return job != null ? words(job.name()) : "";
+    }
+
+    /** The class a job belongs to: Cygnus Knights and Aran count with the class they fight as. */
+    private static String jobClass(int id) {
+        int branch = id % 1000;
+        if (branch == 0) {
+            return "beginner";
+        }
+        return switch (branch / 100) {
+            case 1 -> "warrior";
+            case 2 -> "magician";
+            case 3 -> "bowman";
+            case 4 -> "thief";
+            case 5 -> "pirate";
+            case 9 -> "gm";
+            default -> "";
+        };
     }
 
     private static String worldName(int id) {
