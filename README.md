@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="https://github.com/user-attachments/assets/f3327f7f-5a19-403d-b881-d540287cdf14" width="120" height="120" alt="Voyage Voyage-Client game server logo" />
+<img src="https://github.com/user-attachments/assets/f3327f7f-5a19-403d-b881-d540287cdf14" width="120" height="120" alt="Voyage Server logo" />
 
-# Voyage Server: Voyage-Client Game Server
+# Voyage Server: Version 83 Game Server
 
-**An open-source Voyage-Client v83 game server that reads the Voyage assets, with an admin page in your browser.**
+**An open-source version 83 game server that reads the Voyage assets, with an admin page in your browser.**
 Java · Part of Voyage, with Voyage-Client and Voyage-Editor
 
 <br />
@@ -21,11 +21,11 @@ Java · Part of Voyage, with Voyage-Client and Voyage-Editor
 [![Last commit](https://img.shields.io/github/last-commit/comcad/Voyage-Server?style=flat-square)](https://github.com/comcad/Voyage-Server/commits/main)
 
 </div>
-<img width="2864" height="1440" alt="image" src="https://github.com/user-attachments/assets/2d72787d-5755-4b06-9a80-4650fbfe319b" />
+<img width="2864" height="1440" alt="Screenshot of Voyage Server" src="https://github.com/user-attachments/assets/2d72787d-5755-4b06-9a80-4650fbfe319b" />
 
 <br />
 
-**Voyage Server** is an open-source **Voyage-Client server**: a fork of [Cosmic](https://github.com/P0nk/Cosmic) that reads the game data from the assets folder the [Voyage WZ Extractor](https://github.com/comcad/Voyage-Wz-Extractor) makes, the same folder [Voyage-Client](https://github.com/comcad/Voyage-Client) serves and [Voyage-Editor](https://github.com/comcad/Voyage-Editor) publishes into. It runs with its database in one Docker container and has an admin page of its own.
+**Voyage Server** is an open-source **version 83 game server**: a fork of [Cosmic](https://github.com/P0nk/Cosmic) that reads the game data from the assets folder the [Voyage WZ Extractor](https://github.com/comcad/Voyage-Wz-Extractor) makes, the same folder [Voyage-Client](https://github.com/comcad/Voyage-Client) serves and [Voyage-Editor](https://github.com/comcad/Voyage-Editor) publishes into. It runs with its database in one Docker container and has an admin page of its own.
 
 The repository contains everything needed to deploy it except the game data: the server's source, its scripts and settings, the database setup, and the Docker files. You bring the assets folder, made from your own game files.
 
@@ -34,7 +34,7 @@ The repository contains everything needed to deploy it except the game data: the
 
 ## 🧭 The Voyage Projects
 
-Voyage is four projects that work together, all reading one assets folder made from your own game files:
+Voyage is made up of four projects that work together, all reading one assets folder made from your own game files:
 
 | Project | What it does |
 |---|---|
@@ -50,7 +50,7 @@ voyage-assets/                 # made by the extractor from your own .wz files
 Voyage-Client/  Voyage-Server/  Voyage-Editor/    # each pointed at ../voyage-assets
 ```
 
-## ✨ Features of the Voyage-Client Server
+## ✨ Features
 
 | | Area | What's included |
 |---|---|---|
@@ -63,7 +63,7 @@ Voyage-Client/  Voyage-Server/  Voyage-Editor/    # each pointed at ../voyage-as
 | 🌍 | **Worlds & rates** | Worlds, channels, rates and messages, changed from the admin page or `config.yaml` |
 | 🔄 | **Close to upstream** | Only what Voyage needs is changed, so updates from upstream can be brought in |
 
-## 🧩 How the Voyage-Client Server Works
+## 🧩 How It Works
 
 ```
 ┌──────────────────┐   WebSocket   ┌──────────────────┐     TCP     ┌──────────────────────────┐
@@ -81,11 +81,11 @@ Players' browsers reach the server through Voyage-Client, which relays them to i
 
 ## 📋 Requirements
 
-- A folder of v83 `*.wz` files (your own), extracted with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor)
+- A folder of version 83 `*.wz` files (your own), extracted with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor)
 - **Either** Docker (with Compose) **or** Java 21 and MySQL 8
 - [Voyage-Client](https://github.com/comcad/Voyage-Client), to play in a browser
 
-## 🚀 Quick Start: Deploy the Voyage-Client Server
+## 🚀 Quick Start: Deploy the Server
 
 ### 1. Clone the repo
 
@@ -99,7 +99,7 @@ cd Voyage-Server
 The WZ extractor lives in its own repo: **[Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor)** (pure Node, zero dependencies).
 
 > [!NOTE]
-> Use your own v83 `.wz` files.
+> Use your own version 83 `.wz` files.
 
 ```sh
 cd ..                                # beside Voyage-Server, not inside it
@@ -160,7 +160,7 @@ Point Voyage-Client at this machine: in its `conf/client.conf`, `Relay.Servers =
 
 ## ⚙️ Settings
 
-`.env` holds what is this machine's own, for Docker; `config.yaml` holds every setting of the server, each with a note beside it. `config.yaml` is mounted into the container: **restart the server after a change** (`docker compose restart`, or Restart on the admin page). The admin page's **Server** tab edits it too.
+`.env` holds this machine's own settings for Docker; `config.yaml` holds every setting of the server, each with a note beside it. `config.yaml` is mounted into the container: **restart the server after a change** (`docker compose restart`, or Restart on the admin page). The admin page's **Server** tab edits it too.
 
 | Where | Key | Default | Meaning |
 |---|---|---|---|
@@ -192,7 +192,7 @@ Restart ends the server with exit code 75, and the container (or `launch.sh` / `
 
 ## 🗂️ Customs
 
-The server reads each `.img` from the assets folder, and a file in its `customs` folder (laid out like the assets) in place of the assets' file of the same name; a file only `customs` has is read as well. That is where [Voyage-Editor](https://github.com/comcad/Voyage-Editor) publishes. The server reads a file the first time it needs it and keeps it, so after publishing, restart the server. The assets folder is only ever read.
+The server reads each `.img` from the assets folder, but reads a file in the `customs` folder (laid out like the assets) in place of the assets' file of the same name, and reads a file that only `customs` has as well. That is where [Voyage-Editor](https://github.com/comcad/Voyage-Editor) publishes. The server reads each file the first time it needs it and keeps it, so restart the server after publishing. The assets folder is only ever read.
 
 ## 📁 Project Layout
 
@@ -228,11 +228,11 @@ Voyage-Server/
 ## ❓ FAQ
 
 <details>
-<summary><b>What is a Voyage-Client server emulator?</b></summary>
+<summary><b>What is a server emulator?</b></summary>
 
 <br />
 
-A program that does what the official game servers do (logins, worlds, maps, monsters, items, quests) so that the game client can be played against it. Voyage Server is one for v83, based on Cosmic and the long line of open-source emulators before it.
+A program that does what the official game servers do (logins, worlds, maps, monsters, items, quests) so that the game client can be played against it. Voyage Server is one for version 83, based on Cosmic and the long line of open-source emulators before it.
 
 </details>
 
@@ -241,7 +241,7 @@ A program that does what the official game servers do (logins, worlds, maps, mon
 
 <br />
 
-No. You supply your own v83 `.wz` files and extract them with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor); the server, the client and the editor all read that folder.
+No. You supply your own version 83 `.wz` files and extract them with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor); the server, the client and the editor all read that folder.
 
 </details>
 
@@ -268,7 +268,7 @@ On the admin page's **Server** tab (or in `config.yaml`): the number of worlds, 
 
 <br />
 
-`docker exec voyage-server mysqldump -uroot voyage > backup.sql`. Its files are in `database/docker-db-data`, too.
+`docker exec voyage-server mysqldump -uroot voyage > backup.sql`. Its files are also kept in `database/docker-db-data`.
 
 </details>
 
@@ -277,7 +277,7 @@ On the admin page's **Server** tab (or in `config.yaml`): the number of worlds, 
 
 <br />
 
-Yes. This repository keeps Cosmic's history without its XML game data, so its commits are not upstream's own and a plain merge doesn't line up; but Voyage Server changes only what it needs, so upstream's changes apply as they are. `git remote add upstream https://github.com/P0nk/Cosmic.git` and `git fetch upstream`, then `git cherry-pick` the commits you want (`git log upstream/master` lists them). What is different is listed in [Credits](#-credits).
+Yes. This repository keeps Cosmic's history without its XML game data, so its commits are not the same as upstream's and a plain merge won't line up. Voyage Server changes only what it needs, though, so upstream's changes still apply cleanly: run `git remote add upstream https://github.com/P0nk/Cosmic.git` and `git fetch upstream`, then `git cherry-pick` the commits you want (`git log upstream/master` lists them). What is different is listed under [Credits](#-credits).
 
 </details>
 
@@ -294,32 +294,33 @@ Questions, feedback, or want to help test? Come hang out on Discord.
 
 ## 📄 License
 
-- **License:** [AGPL-3.0](LICENSE), as Cosmic. If you run a changed copy for others to play, offer them its source.
+- **License:** [AGPL-3.0](LICENSE), the same license as Cosmic. If you run a changed copy for others to play, offer them its source.
 
 
 ## ⚠️ Disclaimer
 
 ### No Game Assets Included
-This repository contains **no** copyrighted assets. That includes `.wz` files, extracted images, audio, maps, and any other game data. It contains only original source code written by the contributors.
+This repository contains **no** copyrighted game assets: no `.wz` files, extracted images, audio, maps or any other game data. It contains only source code.
 
-To use this software, you must supply your own legally obtained copy of the game files. You are solely responsible for ensuring you have the legal right to possess and use them. The contributors do not provide, host, link to, or distribute these files and will not assist in obtaining them.
+To use this software, you must supply your own legally obtained copy of the game files. You are solely responsible for making sure you have the legal right to possess and use them. The contributors do not provide, host, link to or distribute these files, and will not help anyone obtain them.
 
 ### Intended Use
-This software is provided for educational, research, and interoperability purposes, and for use with self-hosted servers on a private, non-commercial basis. It is not intended to circumvent any technological protection measure, to replace or compete with any official product or service, or to be used for commercial gain.
+This software is provided for educational, research and interoperability purposes, and for use with self-hosted servers on a private, non-commercial basis. It is not intended to circumvent any technological protection measure, to replace or compete with any official product or service, or to be used for commercial gain.
 
-The contributors do not sell this software, charge for access, or accept payment for in-game items or advantages. Anyone who does so with this software acts on their own account and at their own risk.
+The contributors do not sell this software, charge for access or accept payment for in-game items or advantages. Anyone who does so with this software acts on their own account and at their own risk.
 
 ### License Scope
-The MIT license in this repository applies **only** to the original source code written by the contributors. It grants no rights to any Nexon trademarks, assets, or other intellectual property.
+The AGPL-3.0 license in this repository applies **only** to its source code. It grants no rights to any third party's trademarks, assets or other intellectual property.
 
 ### No Warranty
 THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OF THIS SOFTWARE.
 
 ### Your Responsibility
-You are responsible for complying with all applicable laws and with any license or terms of service that apply to the game files and servers you use.
+You are responsible for complying with all applicable laws, and with any license or terms of service that apply to the game files and servers you use.
+
 
 <div align="right">
 
-[⬆ Back to top](#voyage-server)
+[⬆ Back to top](#voyage-server-version-83-game-server)
 
 </div>
