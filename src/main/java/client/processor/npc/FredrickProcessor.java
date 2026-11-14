@@ -186,6 +186,9 @@ public class FredrickProcessor {
                             } while (elapsedDays >= notifDay);
 
                             Timestamp logoutTs = rs.getTimestamp("lastLogoutTime");
+                            if (logoutTs == null) {
+                                continue;   // the character is gone: nobody to remind (the items still expire with the rest)
+                            }
                             int inactivityDays = timestampElapsedDays(logoutTs, curTime);
 
                             if (inactivityDays < 7 || daynotes >= dailyReminders.length - 1) {  // don't spam inactive players
