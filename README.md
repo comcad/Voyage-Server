@@ -156,7 +156,7 @@ Make a MySQL 8 database called `voyage` and a user for it, and put them in `conf
 
 ### 5. Play
 
-Point Voyage-Client at this machine: in its `conf/client.conf`, `Relay.Servers = "voyage=<this machine's address>"` (`127.0.0.1` when they run on the same machine), and restart it. The client's machine needs to reach this one's ports 8484 and 7575-7577 (and each further world's channels). Open the client and log in as **`admin`** with the password from `.env`: the server made that account on its first start, with the character **Admin** at GM level 6. The game asks you to choose a PIN and a PIC the first time. Players make their own accounts by logging in with a name that has none (`AUTOMATIC_REGISTER`). 🎮
+Point Voyage-Client at this machine: in its `conf/client.conf`, `Relay.Servers = "voyage=<this machine's address>"` (`127.0.0.1` when they run on the same machine), and restart it. The client's machine needs to reach this one's ports 8484 and 7575-7577 (and each further world's channels). Open the client and log in as **`admin`** with the password from `.env`: the server made that account on its first start, with the character **Admin** at GM level 6. Players make their own accounts by logging in with a name that has none (`AUTOMATIC_REGISTER`). 🎮
 
 ## ⚙️ Settings
 
@@ -171,7 +171,7 @@ Point Voyage-Client at this machine: in its `conf/client.conf`, `Relay.Servers =
 | `config.yaml` | `ADMIN_PORT`, `ADMIN_PASSWORD` | `0`, `""` | The admin page without Docker (the environment variables of the same names win) |
 | `config.yaml` | `WORLDS` | `1` | How many worlds; each world's channels, rates and messages are under `worlds:` |
 | `config.yaml` | `DB_URL_FORMAT`, `DB_HOST`, `DB_USER`, `DB_PASS` | `voyage` on `localhost`, `root` | The database (Docker sets `DB_HOST` to the container's own) |
-| `config.yaml` | `ENABLE_PIN`, `ENABLE_PIC` | `true` | Whether players set a PIN and a PIC |
+| `config.yaml` | `ENABLE_PIN`, `ENABLE_PIC` | `false` | Whether players set a PIN and a PIC (deleting a character needs a PIC) |
 | `config.yaml` | `AUTOMATIC_REGISTER` | `true` | Logging in with a name that has no account makes one |
 
 More worlds need their channels' ports opened: a line for each in `docker-compose.yml` (world 2's channels are 7675-7677, world 3's 7775-7777, and so on).
