@@ -40,7 +40,7 @@ Voyage is made up of four projects that work together, all reading one assets fo
 |---|---|
 | [Voyage-Client](https://github.com/comcad/Voyage-Client) | The web client: serves the game to browsers and relays them to the game server |
 | **Voyage-Server** (this one) | The game server: a fork of [Cosmic](https://github.com/P0nk/Cosmic) that reads the same assets, with an admin page |
-| [Voyage-Editor](https://github.com/comcad/Voyage-Editor) | The map, item, NPC and quest editor: publishes what you make into the assets' `customs` folder |
+| [Voyage-Editor](https://github.com/comcad/Voyage-Editor) | The map, item, NPC, monster and quest editor: publishes what you make into the assets' `customs` folder |
 | [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor) | Turns your own `.wz` files into the assets folder the other three read |
 
 ```
@@ -192,7 +192,7 @@ Restart ends the server with exit code 75, and the container (or `launch.sh` / `
 
 ## 🗂️ Customs
 
-The server reads each `.img` from the assets folder, but reads a file in the `customs` folder (laid out like the assets) in place of the assets' file of the same name, and reads a file that only `customs` has as well. That is where [Voyage-Editor](https://github.com/comcad/Voyage-Editor) publishes. Scripts too: `customs/scripts/<path>` is run in place of the server's own `scripts/<path>`, which is where the editor publishes the dialogue of an NPC made there (`customs/scripts/npc/<number>.js`). The server reads each file the first time it needs it and keeps it, so restart the server after publishing. The assets folder is only ever read.
+The server reads each `.img` from the assets folder, but reads a file in the `customs` folder (laid out like the assets) in place of the assets' file of the same name, and reads a file that only `customs` has as well. That is where [Voyage-Editor](https://github.com/comcad/Voyage-Editor) publishes. Scripts too: `customs/scripts/<path>` is run in place of the server's own `scripts/<path>`, which is where the editor publishes the dialogue of an NPC made there (`customs/scripts/npc/<number>.js`). Monsters' drops too: `customs/server/mob-drops.json` (written by the editor) gives each monster listed there its drops in place of its drops in the database; one not listed keeps the database's. It is read again when it changes, so `!reloaddrops` takes a change in as well as a restart. The server reads each file the first time it needs it and keeps it, so restart the server after publishing. The assets folder is only ever read.
 
 ## 📁 Project Layout
 

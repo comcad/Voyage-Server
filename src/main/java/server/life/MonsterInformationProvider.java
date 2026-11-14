@@ -152,6 +152,12 @@ public class MonsterInformationProvider {
         if (drops.containsKey(monsterId)) {
             return drops.get(monsterId);
         }
+        // the customs folder's drops for it (written by Voyage-Editor), in place of the database's
+        final List<MonsterDropEntry> own = CustomDrops.of(monsterId);
+        if (own != null) {
+            drops.put(monsterId, own);
+            return own;
+        }
         final List<MonsterDropEntry> ret = new LinkedList<>();
 
         try (Connection con = DatabaseConnection.getConnection();
