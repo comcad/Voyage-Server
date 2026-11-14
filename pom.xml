@@ -10,7 +10,7 @@
     <name>Voyage Server</name>
     <!-- A fork of Cosmic (github.com/P0nk/Cosmic) that reads the game data from Voyage's assets. -->
     <description>Server emulator for Global MapleStory version 83</description>
-    <url>https://github.com/P0nk/Cosmic</url>
+    <url>https://github.com/comcad/Voyage-Server</url>
     <inceptionYear>2021</inceptionYear>
 
     <developers>
@@ -29,17 +29,17 @@
     </developers>
 
     <scm>
-        <connection>scm:git:https://github.com/P0nk/Cosmic.git</connection>
-        <developerConnection>scm:git:https://github.com/P0nk/Cosmic.git</developerConnection>
-        <url>https://github.com/P0nk/Cosmic</url>
+        <connection>scm:git:https://github.com/comcad/Voyage-Server.git</connection>
+        <developerConnection>scm:git:https://github.com/comcad/Voyage-Server.git</developerConnection>
+        <url>https://github.com/comcad/Voyage-Server</url>
     </scm>
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/P0nk/Cosmic/issues</url>
+        <url>https://github.com/comcad/Voyage-Server/issues</url>
     </issueManagement>
     <ciManagement>
         <system>GitHub Actions</system>
-        <url>https://github.com/P0nk/Cosmic/actions</url>
+        <url>https://github.com/comcad/Voyage-Server/actions</url>
     </ciManagement>
 
     <properties>

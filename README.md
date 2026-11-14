@@ -54,14 +54,14 @@ Voyage-Client/  Voyage-Server/  Voyage-Editor/    # each pointed at ../voyage-as
 
 | | Area | What's included |
 |---|---|---|
-| 🎮 | **Gameplay** | Everything Cosmic plays: every class and its skills, quests and party quests, bosses and expeditions, events, shops and trading, parties, guilds and families, the Cash Shop and more |
+| 🎮 | **Gameplay** | The full v83 game: every class and its skills, quests and party quests, bosses and expeditions, events, shops and trading, parties, guilds and families, the Cash Shop and more |
 | 📦 | **Voyage assets** | Reads each `.img` from its JSON file in the assets folder: no XML `wz` folder to keep beside it |
 | 🗂️ | **Customs** | A file in the assets' `customs` folder is read in place of the assets' own, and a new one is read as well, so what you publish with Voyage-Editor reaches the game server too |
 | 🛡️ | **Admin page** | How the server is doing, who is playing, a notice to everyone, restart and shut down, the worlds and every setting, and the console, in your browser |
 | 👑 | **One admin account** | Made on the first start with the password you choose; the repository ships no accounts and no passwords |
 | 🐳 | **One container** | The server and its MySQL database in one Docker container; settings and scripts are mounted, so a change takes a restart, not a rebuild |
 | 🌍 | **Worlds & rates** | Worlds, channels, rates and messages, changed from the admin page or `config.yaml` |
-| 🔄 | **Close to Cosmic** | Only what Voyage needs is changed, so Cosmic's updates can be brought in |
+| 🔄 | **Close to upstream** | Only what Voyage needs is changed, so updates from upstream can be brought in |
 
 ## 🧩 How the MapleStory Server Works
 
@@ -200,7 +200,7 @@ Voyage-Server/
 ├── src/main/java/
 │   ├── provider/json/       # reads the assets' JSON (and the customs folder in front of it)
 │   ├── net/server/admin/    # the admin page's server, the console it shows, and the admin account
-│   └── ...                  # the game server, as Cosmic has it
+│   └── ...                  # the game server
 ├── src/main/resources/
 │   ├── admin/               # the admin page (HTML, CSS, JavaScript), served from the jar
 │   └── db/                  # the database setup (Liquibase) and admin-account.sql
@@ -212,9 +212,9 @@ Voyage-Server/
 ├── docker/start.sh          # starts MySQL, then the server (again after a Restart)
 ├── launch.sh, launch.bat    # start it without Docker
 ├── database/docker-db-data/ # the database's files: gitignored
-├── docs/                    # Cosmic's own README and notes
-├── handbook/                # Cosmic's handbook: items, mobs, maps and more by id
-├── tools/                   # Cosmic's tools
+├── docs/                    # upstream's README (UPSTREAM-README.md) and notes
+├── handbook/                # the handbook: items, mobs, maps and more by id
+├── tools/                   # tools for the game data
 ├── pom.xml, mvnw            # the build (Maven)
 └── LICENSE                  # AGPL-3.0
 ```
@@ -269,7 +269,7 @@ On the admin page's **Server** tab (or in `config.yaml`): the number of worlds, 
 </details>
 
 <details>
-<summary><b>Can I bring in Cosmic's updates?</b></summary>
+<summary><b>Can I bring in updates from upstream?</b></summary>
 
 <br />
 
@@ -285,7 +285,7 @@ Questions, feedback, or want to help test? Come hang out on Discord.
 
 ## 🙏 Credits
 
-- **Cosmic:** [Cosmic](https://github.com/P0nk/Cosmic) by Ponk and its contributors, and the servers it comes from, from OdinMS (2008) to HeavenMS (2019): see [`docs/Cosmic-README.md`](docs/Cosmic-README.md)
+- **Cosmic:** [Cosmic](https://github.com/P0nk/Cosmic) by Ponk and its contributors, and the servers it comes from, from OdinMS (2008) to HeavenMS (2019): see [`docs/UPSTREAM-README.md`](docs/UPSTREAM-README.md)
 - **What Voyage changed:** the JSON reader and `ASSETS_PATH` (`provider/json`, `DataProviderFactory`), the admin page and the admin account (`net/server/admin`), one container with MySQL, no `wz` folder, and no account with a known password in the database setup
 
 ## 📄 License

@@ -1,6 +1,6 @@
 -- The admin account, made by AdminAccount when the server first starts with ADMIN_PASSWORD set and the database
 -- has no account named admin. {PASSWORD_HASH} becomes the bcrypt hash of that password; no PIN or PIC is set (the
--- game asks for them at the first login when ENABLE_PIN / ENABLE_PIC are on). This is upstream Cosmic's admin seed.
+-- game asks for them at the first login when ENABLE_PIN / ENABLE_PIC are on). This is upstream's admin seed (changeset 161).
 INSERT INTO accounts (`name`, password, pin, pic, birthday, nxcredit, maplepoint, nxprepaid, characterslots, gender,
                          tos)
 VALUES ('admin', '{PASSWORD_HASH}', '', '',
