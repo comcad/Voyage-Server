@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import provider.DataProviderFactory;
 import server.maps.MapFactory;
+import tools.BCrypt;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
 
@@ -177,6 +178,8 @@ public final class AdminServer {
                 case "POST /players/kick" -> kick(ex, body(ex));
                 case "POST /players/ban" -> ban(ex, body(ex));
                 case "POST /players/unban" -> unban(ex, body(ex));
+                case "POST /players/gm" -> gmLevel(ex, body(ex));
+                case "POST /accounts" -> newAccount(ex, body(ex));
                 case "GET /settings" -> json(ex, 200, Map.of("file", CONFIG.toAbsolutePath().normalize().toString(), "settings", AdminSettings.read(CONFIG)));
                 case "PUT /settings" -> {
                     int n = AdminSettings.write(CONFIG, body(ex));
@@ -593,6 +596,67 @@ public final class AdminServer {
             }
         }
         log.warn("Admin page: unbanned {}", name);
+        json(ex, 200, Map.of("ok", true));
+    }
+
+    /**
+     * Makes an account, for testing: a name and password the game's login box takes (it holds 12 characters), a gender,
+     * and the terms already agreed, so the first login goes straight to making characters.
+     */
+    private static void newAccount(HttpExchange ex, Map<String, Object> body) throws IOException, SQLException {
+        String name = body.get("name") instanceof String s ? s.trim() : "";
+        String password = body.get("password") instanceof String s ? s : "";
+        Object g = body.get("gender");
+        if (!name.matches("[A-Za-z0-9]{4,12}")) {
+            throw new IllegalArgumentException("An account name is 4 to 12 letters and digits.");
+        }
+        if (!password.matches("\\p{Graph}{4,12}")) {
+            throw new IllegalArgumentException("A password is 4 to 12 letters, digits or symbols, with no spaces.");
+        }
+        if (!(g instanceof Number n) || (n.doubleValue() != 0 && n.doubleValue() != 1)) {
+            throw new IllegalArgumentException("Which gender?");
+        }
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("INSERT INTO accounts (name, password, birthday, tempban, gender, tos) VALUES (?, ?, ?, ?, ?, 1)")) {
+            ps.setString(1, name);
+            ps.setString(2, BCrypt.hashpw(password, BCrypt.gensalt(12)));
+            ps.setDate(3, java.sql.Date.valueOf(DefaultDates.getBirthday()));
+            ps.setTimestamp(4, Timestamp.valueOf(DefaultDates.getTempban()));
+            ps.setInt(5, ((Number) g).intValue());
+            ps.executeUpdate();
+        } catch (java.sql.SQLIntegrityConstraintViolationException e) {
+            throw new IllegalArgumentException("There is already an account called " + name + ".");
+        }
+        log.warn("Admin page: made the account {}", name);
+        json(ex, 200, Map.of("ok", true));
+    }
+
+    /**
+     * Sets a character's GM level, 0 (a player) to 6, as !setgmlevel does: a player in the game has it at once and is
+     * told; anyone else has it from their next login.
+     */
+    private static void gmLevel(HttpExchange ex, Map<String, Object> body) throws IOException, SQLException {
+        String name = nameIn(body);
+        Object asked = body.get("level");
+        if (!(asked instanceof Number n) || n.doubleValue() != n.intValue() || n.intValue() < 0 || n.intValue() > 6) {
+            throw new IllegalArgumentException("A GM level is 0 (a player) to 6.");
+        }
+        int level = ((Number) asked).intValue();
+        try (Connection con = DatabaseConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement("UPDATE characters SET gm = ? WHERE name = ?")) {
+            ps.setInt(1, level);
+            ps.setString(2, name);
+            if (ps.executeUpdate() == 0) {
+                throw new IllegalArgumentException("There is no character called " + name + ".");
+            }
+        }
+        Character c = online(name);
+        if (c != null) {
+            c.setGMLevel(level);
+            c.getClient().setGMLevel(level);
+            c.dropMessage(level > 0 ? "You are now a level " + level + " GM. See @commands for a list of available commands." : "You are no longer a GM.");
+        }
+        log.warn("Admin page: {} is now GM level {}", name, level);
         json(ex, 200, Map.of("ok", true));
     }
 

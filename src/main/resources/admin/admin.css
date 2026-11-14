@@ -300,6 +300,11 @@ th button.sort.on { color: var(--ink); }
 th button.sort .arrow { display: inline-block; width: 9px; font-size: 9px; }
 .pager { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 .pager:empty { display: none; }
+/* the Players tab's head: the count and New account; the New account window */
+.head-side { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.form-grid { display: grid; gap: 10px; }
+.form-grid label { display: grid; gap: 4px; }
+.form-grid input, .form-grid select { width: 100%; }
 /* the Ban window: how long */
 .ban-length input.ban-amount { width: 80px; }
 input.ban-reason { width: 100%; }

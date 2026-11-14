@@ -1,6 +1,7 @@
 /**
  * Players: every character, online or not, with a search, filters, and sorting by any column; where each is, on which
- * world and channel, with Kick and Ban (for a time or for good; Unban for a banned account) for each. The server does the searching and
+ * world and channel, with its GM level, Kick and Ban (for a time or for good; Unban for a banned account) for each.
+ * New account makes an account for testing. The server does the searching and
  * sorting and sends one page at a time, so this stays quick with many characters.
  */
 import { h, fill, toast, dialog, settled, fmt } from './ui.js';
@@ -61,7 +62,8 @@ export function playersTab(host) {
   } }, 'Clear filters');
 
   host.append(h('section', { class: 'panel' },
-    h('header', { class: 'panel-head' }, h('h2', null, 'Players'), count),
+    h('header', { class: 'panel-head' }, h('h2', null, 'Players'),
+      h('div', { class: 'head-side' }, count, h('button', { type: 'button', onclick: () => newAccount() }, 'New account'))),
     h('div', { class: 'filters' }, search, status, world, job, h('label', null, 'Level', min, '–', max), gm, clearBtn),
     list, pager));
 
@@ -109,6 +111,54 @@ export function playersTab(host) {
     refresh().catch(() => {});
   };
 
+  /** The window for a new account: name, password and gender; it stays open with the server's words when it can't. */
+  const newAccount = async () => {
+    asking = true;
+    const made = await dialog('New account', (close) => {
+      const field = (label, hint) => h('input', { type: 'text', maxlength: 12, autocomplete: 'off', spellcheck: false, placeholder: hint, 'aria-label': label });
+      const name = field('Account name', '4 to 12 letters and digits'), pass = field('Password', '4 to 12 characters');
+      const gender = h('select', { 'aria-label': 'Gender' }, h('option', { value: '0' }, 'Male'), h('option', { value: '1' }, 'Female'));
+      const error = h('p', { class: 'error' });
+      const make = h('button', { type: 'submit', class: 'primary' }, 'Make account');
+      setTimeout(() => name.focus(), 0);
+      return [h('p', null, 'An account for testing. Log in with it to make its characters; the terms are already agreed.'),
+        h('form', { class: 'form-grid', onsubmit: async (e) => {
+          e.preventDefault();
+          error.textContent = ''; make.disabled = true;
+          try {
+            await api('/accounts', { method: 'POST', body: { name: name.value.trim(), password: pass.value, gender: Number(gender.value) } });
+            close(name.value.trim());
+          } catch (err) { error.textContent = err.message; make.disabled = false; }
+        } },
+        h('label', null, 'Account name', name), h('label', null, 'Password', pass), h('label', null, 'Gender', gender), error,
+        h('div', { class: 'dialog-foot' }, h('button', { type: 'button', onclick: () => close(null) }, 'Cancel'), make))];
+    });
+    asking = false;
+    if (made) toast(`Made the account ${made}. Log in with it to make its characters.`);
+  };
+
+  /** The window for a character's GM level, 0 (a player) to 6. */
+  const setGm = async (p) => {
+    asking = true;
+    const level = await dialog(`GM level for ${p.name}`, (close) => {
+      const pick = h('select', { 'aria-label': 'GM level' }, [0, 1, 2, 3, 4, 5, 6].map((n) =>
+        h('option', { value: String(n) }, n === 0 ? '0 (a player)' : n === 6 ? '6 (every command)' : String(n))));
+      pick.value = String(p.gm);
+      setTimeout(() => pick.focus(), 0);
+      return [h('p', null, p.online ? `${p.name} is in the game: the new level works at once, and they are told.` : `${p.name} has the new level from their next login.`),
+        h('p', null, h('label', null, 'GM level', pick)),
+        h('div', { class: 'dialog-foot' }, h('button', { type: 'button', onclick: () => close(null) }, 'Cancel'),
+          h('button', { type: 'button', class: 'primary', onclick: () => close(Number(pick.value)) }, 'Set'))];
+    });
+    asking = false;
+    if (typeof level !== 'number' || level === p.gm) return;
+    try {
+      await api('/players/gm', { method: 'POST', body: { name: p.name, level } });
+      toast(level ? `${p.name} is now GM level ${level}.` : `${p.name} is no longer a GM.`);
+    } catch (e) { toast(e.message, true); }
+    refresh().catch(() => {});
+  };
+
   const sortBy = (key) => {
     if (v.sort === key) v.dir = v.dir === 'asc' ? 'desc' : 'asc';
     else { v.sort = key; v.dir = FIRST_DESC.has(key) ? 'desc' : 'asc'; }
@@ -128,6 +178,7 @@ export function playersTab(host) {
         p.until ? `banned, ${fmt.span(p.until - Date.now())} left` : 'banned')] : null] },
     { key: 'seen', name: 'Last online', cell: (p) => (p.online ? 'now' : p.seen ? h('span', { title: fmt.day(p.seen) }, fmt.ago(p.seen)) : h('span', { class: 'muted' }, 'never')) },
     { name: '', cls: 'actions', cell: (p) => h('span', { style: { display: 'inline-flex', gap: '6px' } },
+      h('button', { type: 'button', class: 'quiet', onclick: () => setGm(p) }, 'GM level'),
       h('button', { type: 'button', class: 'quiet', disabled: !p.online, title: p.online ? null : 'Not in the game', onclick: () => act('kick', p) }, 'Kick'),
       p.banned
         ? h('button', { type: 'button', class: 'quiet', onclick: () => act('unban', p) }, 'Unban')
