@@ -25,6 +25,7 @@ import client.Client;
 import com.oracle.truffle.js.scriptengine.GraalJSScriptEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import provider.DataProviderFactory;
 
 import javax.script.*;
 import java.io.BufferedReader;
@@ -45,8 +46,8 @@ public abstract class AbstractScriptManager {
     }
 
     protected ScriptEngine getInvocableScriptEngine(String path) {
-        Path scriptFile = Path.of("scripts", path);
-        if (!Files.exists(scriptFile)) {
+        Path scriptFile = scriptFile(path);
+        if (scriptFile == null) {
             return null;
         }
 
@@ -65,6 +66,23 @@ public abstract class AbstractScriptManager {
         }
 
         return graalScriptEngine;
+    }
+
+    /**
+     * The file a script is read from: the assets' customs folder's (customs/scripts/<path>, where Voyage-Editor
+     * publishes the dialogue of an NPC made there) in place of the server's own (scripts/<path>); null when neither
+     * has it.
+     */
+    static Path scriptFile(String path) {
+        Path customs = DataProviderFactory.customsFolder();
+        if (customs != null && !path.contains("..")) {
+            Path own = customs.resolve("scripts").resolve(path);
+            if (Files.isRegularFile(own)) {
+                return own;
+            }
+        }
+        Path file = Path.of("scripts", path);
+        return Files.exists(file) ? file : null;
     }
 
     protected ScriptEngine getInvocableScriptEngine(String path, Client c) {

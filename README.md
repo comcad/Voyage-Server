@@ -192,7 +192,7 @@ Restart ends the server with exit code 75, and the container (or `launch.sh` / `
 
 ## 🗂️ Customs
 
-The server reads each `.img` from the assets folder, but reads a file in the `customs` folder (laid out like the assets) in place of the assets' file of the same name, and reads a file that only `customs` has as well. That is where [Voyage-Editor](https://github.com/comcad/Voyage-Editor) publishes. The server reads each file the first time it needs it and keeps it, so restart the server after publishing. The assets folder is only ever read.
+The server reads each `.img` from the assets folder, but reads a file in the `customs` folder (laid out like the assets) in place of the assets' file of the same name, and reads a file that only `customs` has as well. That is where [Voyage-Editor](https://github.com/comcad/Voyage-Editor) publishes. Scripts too: `customs/scripts/<path>` is run in place of the server's own `scripts/<path>`, which is where the editor publishes the dialogue of an NPC made there (`customs/scripts/npc/<number>.js`). The server reads each file the first time it needs it and keeps it, so restart the server after publishing. The assets folder is only ever read.
 
 ## 📁 Project Layout
 
