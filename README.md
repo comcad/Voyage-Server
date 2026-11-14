@@ -102,12 +102,14 @@ The WZ extractor lives in its own repo: **[Voyage-Wz-Extractor](https://github.c
 > Use your own MapleStory v83 GMS `.wz` files.
 
 ```sh
+cd ..                                # beside Voyage-Server, not inside it
 git clone https://github.com/comcad/Voyage-Wz-Extractor
 cd Voyage-Wz-Extractor
 node wz-extract.mjs <path-to-wz-folder> ../voyage-assets
+cd ../Voyage-Server
 ```
 
-The assets folder is shared: Voyage-Server, Voyage-Client and Voyage-Editor all point at the same one (here `../voyage-assets`, beside the repos). If you already run the client, use its assets folder.
+The assets folder is shared: Voyage-Server, Voyage-Client and Voyage-Editor all point at the same one (here `voyage-assets`, beside the repos). If you already run the client, use its assets folder and skip this step.
 
 ### 3. Configure
 
@@ -132,6 +134,8 @@ docker compose logs -f
 # → "The Voyage server is now online"
 ```
 
+The first start takes a few minutes: it builds the server, sets up the database (every table and the game's shops, drops and the rest) and makes the admin account. Later starts take seconds.
+
 It listens on 8484 (login) and 7575-7577 (world 1's channels), the admin page on 8585 and the database on 127.0.0.1:3307. The database's files are kept in `database/docker-db-data`. Manage it with `docker compose restart` (after a change to `config.yaml` or `scripts/`), `docker compose up -d --build` (after a change to the Java code) and `docker compose down`.
 
 </details>
@@ -152,7 +156,7 @@ Make a MySQL 8 database called `voyage` and a user for it, and put them in `conf
 
 ### 5. Play
 
-Point Voyage-Client at this machine (`Relay.Servers` in its `conf/client.conf`), open it, and log in as **`admin`** with the password from `.env`: the server made that account on its first start, with the character **Admin** at GM level 6. The game asks you to choose a PIN and a PIC the first time. Players make their own accounts by logging in with a name that has none (`AUTOMATIC_REGISTER`). 🎮
+Point Voyage-Client at this machine: in its `conf/client.conf`, `Relay.Servers = "voyage=<this machine's address>"` (`127.0.0.1` when they run on the same machine), and restart it. The client's machine needs to reach this one's ports 8484 and 7575-7577 (and each further world's channels). Open the client and log in as **`admin`** with the password from `.env`: the server made that account on its first start, with the character **Admin** at GM level 6. The game asks you to choose a PIN and a PIC the first time. Players make their own accounts by logging in with a name that has none (`AUTOMATIC_REGISTER`). 🎮
 
 ## ⚙️ Settings
 
