@@ -4,7 +4,7 @@
 
 # Voyage Server: Voyage-Client Game Server
 
-**An open-source Voyage-Client v83 (GMS) game server that reads the Voyage assets, with an admin page in your browser.**
+**An open-source Voyage-Client v83 game server that reads the Voyage assets, with an admin page in your browser.**
 Java · Part of Voyage, with Voyage-Client and Voyage-Editor
 
 <br />
@@ -80,7 +80,7 @@ Players' browsers reach the server through Voyage-Client, which relays them to i
 
 ## 📋 Requirements
 
-- A folder of Voyage-Client v83 GMS `*.wz` files (your own), extracted with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor)
+- A folder of v83 `*.wz` files (your own), extracted with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor)
 - **Either** Docker (with Compose) **or** Java 21 and MySQL 8
 - [Voyage-Client](https://github.com/comcad/Voyage-Client), to play in a browser
 
@@ -98,7 +98,7 @@ cd Voyage-Server
 The WZ extractor lives in its own repo: **[Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor)** (pure Node, zero dependencies).
 
 > [!NOTE]
-> Use your own Voyage-Client v83 GMS `.wz` files.
+> Use your own v83 `.wz` files.
 
 ```sh
 cd ..                                # beside Voyage-Server, not inside it
@@ -240,7 +240,7 @@ A program that does what the official game servers do (logins, worlds, maps, mon
 
 <br />
 
-No. You supply your own Voyage-Client v83 GMS `.wz` files and extract them with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor); the server, the client and the editor all read that folder.
+No. You supply your own v83 `.wz` files and extract them with the [Voyage-Wz-Extractor](https://github.com/comcad/Voyage-Wz-Extractor); the server, the client and the editor all read that folder.
 
 </details>
 
