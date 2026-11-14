@@ -273,7 +273,7 @@ On the admin page's **Server** tab (or in `config.yaml`): the number of worlds, 
 
 <br />
 
-Yes: Voyage Server changes only what it needs, so `git remote add upstream https://github.com/P0nk/Cosmic.git`, `git fetch upstream` and `git merge upstream/master` brings them in. What is different is listed in [Credits](#-credits).
+Yes. This repository keeps Cosmic's history without its XML game data, so its commits are not upstream's own and a plain merge doesn't line up; but Voyage Server changes only what it needs, so upstream's changes apply as they are. `git remote add upstream https://github.com/P0nk/Cosmic.git` and `git fetch upstream`, then `git cherry-pick` the commits you want (`git log upstream/master` lists them). What is different is listed in [Credits](#-credits).
 
 </details>
 
@@ -286,7 +286,7 @@ Questions, feedback, or want to help test? Come hang out on Discord.
 ## 🙏 Credits
 
 - **Cosmic:** [Cosmic](https://github.com/P0nk/Cosmic) by Ponk and its contributors, and the servers it comes from, from OdinMS (2008) to HeavenMS (2019): see [`docs/UPSTREAM-README.md`](docs/UPSTREAM-README.md)
-- **What Voyage changed:** the JSON reader and `ASSETS_PATH` (`provider/json`, `DataProviderFactory`), the admin page and the admin account (`net/server/admin`), one container with MySQL, no `wz` folder, and no account with a known password in the database setup
+- **What Voyage changed:** the JSON reader and `ASSETS_PATH` (`provider/json`, `DataProviderFactory`), the admin page and the admin account (`net/server/admin`), one container with MySQL, no `wz` folder (in the history either), and no account with a known password in the database setup
 
 ## 📄 License
 
