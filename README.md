@@ -9,7 +9,6 @@ Java · Part of Voyage, with Voyage-Client and Voyage-Editor
 
 <br />
 
-![Voyage-Client v83](https://img.shields.io/badge/Voyage-Client-v83%20GMS-orange?style=for-the-badge)
 ![Status](https://img.shields.io/badge/status-alpha-yellow?style=for-the-badge)
 ![License](https://img.shields.io/github/license/comcad/Voyage-Server?style=for-the-badge)
 
