@@ -299,12 +299,12 @@ Questions, feedback, or want to help test? Come hang out on Discord.
 ## ⚠️ Disclaimer
 
 ### No Game Assets Included
-This repository contains **no** copyrighted Nexon assets. That includes `.wz` files, extracted images, audio, maps, and any other game data. It contains only original source code written by the contributors.
+This repository contains **no** copyrighted assets. That includes `.wz` files, extracted images, audio, maps, and any other game data. It contains only original source code written by the contributors.
 
 To use this software, you must supply your own legally obtained copy of the game files. You are solely responsible for ensuring you have the legal right to possess and use them. The contributors do not provide, host, link to, or distribute these files and will not assist in obtaining them.
 
 ### Intended Use
-This software is provided for educational, research, and interoperability purposes, and for use with self-hosted servers on a private, non-commercial basis. It is not intended to circumvent any technological protection measure, to replace or compete with any official Nexon product or service, or to be used for commercial gain.
+This software is provided for educational, research, and interoperability purposes, and for use with self-hosted servers on a private, non-commercial basis. It is not intended to circumvent any technological protection measure, to replace or compete with any official product or service, or to be used for commercial gain.
 
 The contributors do not sell this software, charge for access, or accept payment for in-game items or advantages. Anyone who does so with this software acts on their own account and at their own risk.
 
@@ -319,6 +319,6 @@ You are responsible for complying with all applicable laws and with any license 
 
 <div align="right">
 
-[⬆ Back to top](#voyage-server-Voyage-Client-game-server)
+[⬆ Back to top](#voyage-server)
 
 </div>
