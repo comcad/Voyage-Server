@@ -1,6 +1,6 @@
 /**
  * Players: every character, online or not, with a search, filters, and sorting by any column; where each is, on which
- * world and channel, with Kick and Ban (Unban for a banned account) for each. The server does the searching and
+ * world and channel, with Kick and Ban (for a time or for good; Unban for a banned account) for each. The server does the searching and
  * sorting and sends one page at a time, so this stays quick with many characters.
  */
 import { h, fill, toast, dialog, settled, fmt } from './ui.js';
@@ -16,6 +16,14 @@ const FILTERS = ['q', 'status', 'world', 'job', 'gm', 'min', 'max'];
 const FIRST_DESC = new Set(['level', 'channel', 'seen']);
 const DEFAULTS = { q: '', status: '', world: '', job: '', gm: '', min: '', max: '', sort: 'status', dir: 'asc' };
 const KEY = 'voyage-admin-players';
+// a ban's length: so many minutes, hours or days, or for good (0)
+const UNITS = [['1', 'minutes'], ['60', 'hours'], ['1440', 'days'], ['0', 'permanently']];
+const MOST_MINUTES = 10 * 366 * 24 * 60;
+/** "1 minute", "90 minutes", "2 hours", "3 days", the way the server says it to the player. */
+const span = (m) => {
+  const [n, unit] = m % 1440 === 0 ? [m / 1440, 'day'] : m % 60 === 0 ? [m / 60, 'hour'] : [m, 'minute'];
+  return `${n} ${unit}${n === 1 ? '' : 's'}`;
+};
 
 /** The filters and order this browser used last (not the search). */
 function remembered() {
@@ -57,18 +65,37 @@ export function playersTab(host) {
     h('div', { class: 'filters' }, search, status, world, job, h('label', null, 'Level', min, '–', max), gm, clearBtn),
     list, pager));
 
-  /** A window asking to go on; with `reason`, a line for one. Resolves { reason } to go on, or nothing. */
-  const ask = (title, text, go, reason) => dialog(title, (close) => {
-    const box = reason ? h('input', { type: 'text', maxlength: 100, placeholder: 'Reason (the player is told it)', 'aria-label': 'Reason' }) : null;
-    setTimeout(() => box?.focus(), 0);
-    return [h('p', null, text), box ? h('p', null, box) : null,
+  /**
+   * A window asking to go on; for a ban, also how long and a line for the reason. Resolves { reason, minutes } to go
+   * on (minutes 0: for good), or nothing.
+   */
+  const ask = (title, text, go, banning) => dialog(title, (close) => {
+    const box = banning ? h('input', { type: 'text', class: 'ban-reason', maxlength: 100, placeholder: 'Reason (the player is told it)', 'aria-label': 'Reason' }) : null;
+    const amount = banning ? h('input', { type: 'number', min: 1, step: 1, value: 1, 'aria-label': 'How many', class: 'ban-amount' }) : null;
+    const unit = banning ? h('select', { 'aria-label': 'Minutes, hours or days, or permanently', onchange: () => { amount.hidden = unit.value === '0'; } },
+      UNITS.map(([value, label]) => h('option', { value }, label))) : null;
+    if (unit) unit.value = '1440';
+    const error = h('p', { class: 'error' });
+    const minutes = () => (unit.value === '0' ? 0 : Number(amount.value) * Number(unit.value));
+    const yes = () => {
+      if (banning && unit.value !== '0' && !(Number.isInteger(Number(amount.value)) && Number(amount.value) >= 1 && minutes() <= MOST_MINUTES)) {
+        error.textContent = 'A ban lasts from a minute to ten years, in whole numbers.';
+        amount.focus();
+        return;
+      }
+      close({ reason: box ? box.value : '', minutes: banning ? minutes() : 0 });
+    };
+    setTimeout(() => amount?.focus(), 0);
+    return [h('p', null, text),
+      banning ? h('p', { class: 'ban-length' }, h('label', null, 'Ban for', amount, unit)) : null,
+      box ? h('p', null, box) : null, banning ? error : null,
       h('div', { class: 'dialog-foot' }, h('button', { type: 'button', onclick: () => close(null) }, 'Cancel'),
-        h('button', { type: 'button', class: 'primary', onclick: () => close({ reason: box ? box.value : '' }) }, go))];
+        h('button', { type: 'button', class: 'primary', onclick: yes }, go))];
   });
   const act = async (action, p) => {
     const [title, text, go, reason] = {
       kick: [`Kick ${p.name}?`, `${p.name} is disconnected from the game and can log in again.`, 'Kick', false],
-      ban: [`Ban ${p.name}?`, `${p.name}'s account is banned, with every character on it, ${p.online ? 'and they are disconnected in five seconds' : 'and can no longer log in'}. The machine their game ran on is banned too.`, 'Ban', true],
+      ban: [`Ban ${p.name}?`, `${p.name}'s account is banned, with every character on it${p.online ? '; they are told for how long and why, and disconnected' : ''}. A permanent ban also bans the machine their game ran on.`, 'Ban', true],
       unban: [`Unban ${p.name}?`, `${p.name}'s account can log in again, with every character on it.`, 'Unban', false],
     }[action];
     asking = true;
@@ -76,8 +103,8 @@ export function playersTab(host) {
     asking = false;
     if (!yes) return;
     try {
-      await api(`/players/${action}`, { method: 'POST', body: { name: p.name, reason: yes.reason } });
-      toast({ kick: `${p.name} was kicked.`, ban: `${p.name} is banned.`, unban: `${p.name} is no longer banned.` }[action]);
+      await api(`/players/${action}`, { method: 'POST', body: { name: p.name, reason: yes.reason, ...(action === 'ban' ? { minutes: yes.minutes } : {}) } });
+      toast({ kick: `${p.name} was kicked.`, ban: `${p.name} is banned ${yes.minutes ? `for ${span(yes.minutes)}` : 'permanently'}.`, unban: `${p.name} is no longer banned.` }[action]);
     } catch (e) { toast(e.message, true); }
     refresh().catch(() => {});
   };
@@ -97,7 +124,8 @@ export function playersTab(host) {
     { key: 'channel', name: 'Channel', num: true, cell: (p) => (p.online ? p.channel : '-') },
     { key: 'status', name: 'Status', cell: (p) => [
       p.online ? h('span', { class: 'chip ok' }, 'online') : h('span', { class: 'chip off' }, 'offline'),
-      p.banned ? [' ', h('span', { class: 'chip off', title: p.reason || '' }, 'banned')] : null] },
+      p.banned ? [' ', h('span', { class: 'chip off', title: [p.until ? `Until ${fmt.day(p.until)}.` : 'For good.', p.reason].filter(Boolean).join(' ') },
+        p.until ? `banned, ${fmt.span(p.until - Date.now())} left` : 'banned')] : null] },
     { key: 'seen', name: 'Last online', cell: (p) => (p.online ? 'now' : p.seen ? h('span', { title: fmt.day(p.seen) }, fmt.ago(p.seen)) : h('span', { class: 'muted' }, 'never')) },
     { name: '', cls: 'actions', cell: (p) => h('span', { style: { display: 'inline-flex', gap: '6px' } },
       h('button', { type: 'button', class: 'quiet', disabled: !p.online, title: p.online ? null : 'Not in the game', onclick: () => act('kick', p) }, 'Kick'),

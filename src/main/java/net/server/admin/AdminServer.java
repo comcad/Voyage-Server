@@ -1,6 +1,7 @@
 package net.server.admin;
 
 import client.Character;
+import client.DefaultDates;
 import client.Job;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -12,7 +13,6 @@ import net.server.world.World;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import provider.DataProviderFactory;
-import server.TimerManager;
 import server.maps.MapFactory;
 import tools.DatabaseConnection;
 import tools.PacketCreator;
@@ -293,7 +293,7 @@ public final class AdminServer {
 
     /** A character on the Players tab: from the database, with what the game knows now when it is online. */
     private record Row(String name, String account, int level, int job, int map, String mapName, int world, int channel,
-                       int gm, boolean online, boolean banned, String reason, Long seen) {}
+                       int gm, boolean online, boolean banned, String reason, Long seen, Long until) {}
 
     private static final List<String> SORTS = List.of("name", "account", "level", "job", "map", "world", "channel", "status", "seen");
 
@@ -324,18 +324,22 @@ public final class AdminServer {
         }
         List<Row> all = new ArrayList<>();
         Map<Integer, String> mapNames = new HashMap<>();
+        long now = System.currentTimeMillis();
         try (Connection con = DatabaseConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT c.id, c.name, c.level, c.job, c.map, c.world, c.gm, c.lastLogoutTime, c.createdate, a.name, a.banned, a.banreason FROM characters c JOIN accounts a ON a.id = c.accountid");
+             PreparedStatement ps = con.prepareStatement("SELECT c.id, c.name, c.level, c.job, c.map, c.world, c.gm, c.lastLogoutTime, c.createdate, a.name, a.banned, a.banreason, a.tempban FROM characters c JOIN accounts a ON a.id = c.accountid");
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Character c = live.get(rs.getInt(1));
                 String account = Objects.toString(rs.getString(10), "");
-                boolean banned = rs.getInt(11) == 1;
+                // banned for good, or until a time still to come (then `until` is when it ends)
+                Timestamp tempban = rs.getTimestamp(13);
+                Long until = rs.getInt(11) != 1 && tempban != null && tempban.getTime() > now ? tempban.getTime() : null;
+                boolean banned = rs.getInt(11) == 1 || until != null;
                 String reason = banned ? Objects.toString(rs.getString(12), "") : "";
                 if (c != null) {
                     all.add(new Row(c.getName(), account, c.getLevel(), c.getJob() != null ? c.getJob().getId() : rs.getInt(4),
                             c.getMapId(), c.getMap() != null ? c.getMap().getMapName() : "", c.getWorld(),
-                            c.getClient() != null ? c.getClient().getChannel() : 0, c.gmLevel(), true, banned, reason, null));
+                            c.getClient() != null ? c.getClient().getChannel() : 0, c.gmLevel(), true, banned, reason, null, until));
                 } else {
                     // a character that never logged out still has the column's default, from before it was made
                     Timestamp out = rs.getTimestamp(8), made = rs.getTimestamp(9);
@@ -343,7 +347,7 @@ public final class AdminServer {
                     int map = rs.getInt(5);
                     all.add(new Row(rs.getString(2), account, rs.getInt(3), rs.getInt(4), map,
                             mapNames.computeIfAbsent(map, MapFactory::loadPlaceName), rs.getInt(6), 0, rs.getInt(7), false,
-                            banned, reason, seen));
+                            banned, reason, seen, until));
                 }
             }
         }
@@ -403,6 +407,7 @@ public final class AdminServer {
             m.put("banned", r.banned());
             m.put("reason", r.reason());
             m.put("seen", r.seen());
+            m.put("until", r.until());
             list.add(m);
         }
         Set<Integer> worldIds = new java.util.TreeSet<>();
@@ -504,33 +509,70 @@ public final class AdminServer {
         client.closeSession();
     }
 
+    /** The longest timed ban: ten years, in minutes. */
+    private static final long MOST_MINUTES = 10L * 366 * 24 * 60;
+    /** The game's reason for a timed ban, for its login message: "Your account has been blocked for misconduct." */
+    private static final int TIMED_BAN_REASON = 7;
+
     /**
-     * Bans a character's account (every character on it), as !ban does: a player in the game is told why and is
-     * disconnected five seconds later, and the machine ids their game sent are banned too. Unlike !ban it bans no IP
-     * address: players of the web client all reach the server from the address of the client's relay.
+     * Bans a character's account (every character on it) for {@code minutes}, or for good without them. A player in
+     * the game gets the game's notice for being cut off, saying for how long and why, and is disconnected; one who
+     * tries to log in is told by the game when they can again. A ban for good also bans the machine ids their game
+     * sent, as !ban does; a timed one doesn't, or it would outlast itself. Unlike !ban it bans no IP address: players
+     * of the web client all reach the server from the address of the client's relay.
      */
-    private static void ban(HttpExchange ex, Map<String, Object> body) throws IOException {
+    private static void ban(HttpExchange ex, Map<String, Object> body) throws IOException, SQLException {
         String name = nameIn(body);
         String given = body.get("reason") instanceof String s ? s.trim() : "";
         if (given.length() > 100 || given.contains("\n")) {
             throw new IllegalArgumentException("A reason is one line of up to 100 characters.");
         }
-        String reason = "Banned from the admin page" + (given.isEmpty() ? "" : ": " + given);
+        Object asked = body.get("minutes");
+        long minutes = asked instanceof Number n ? n.longValue() : 0;
+        if (asked != null && !(asked instanceof Number n && n.doubleValue() == minutes && minutes >= 0 && minutes <= MOST_MINUTES)) {
+            throw new IllegalArgumentException("A ban lasts from a minute to ten years, in whole minutes (or 0 for good).");
+        }
+        String length = minutes > 0 ? "for " + span(minutes) : "permanently";
+        String reason = "Banned from the admin page " + length + (given.isEmpty() ? "" : ": " + given);
         Character c = online(name);
-        if (c != null) {
+        if (minutes > 0) {
+            int aid = c != null ? c.getAccountID() : Character.getAccountIdByName(name);
+            if (aid <= 0) {
+                throw new IllegalArgumentException("There is no character called " + name + ".");
+            }
+            try (Connection con = DatabaseConnection.getConnection();
+                 PreparedStatement ps = con.prepareStatement("UPDATE accounts SET banreason = ?, tempban = ?, greason = ? WHERE id = ?")) {
+                ps.setString(1, reason);
+                ps.setTimestamp(2, new Timestamp(System.currentTimeMillis() + minutes * 60_000));
+                ps.setInt(3, TIMED_BAN_REASON);
+                ps.setInt(4, aid);
+                ps.executeUpdate();
+            }
+        } else if (c != null) {
             c.getClient().banMacs();
             c.ban(reason);
-            c.yellowMessage("You have been banned. " + (given.isEmpty() ? "" : "Reason: " + given));
-            Character gone = c;
-            TimerManager.getInstance().schedule(() -> dropConnection(gone.getClient()), 5000);
         } else if (!Character.ban(name, reason, false)) {
             throw new IllegalArgumentException("There is no character called " + name + ".");
+        }
+        if (c != null) {
+            c.sendPacket(PacketCreator.sendPolice("You have been banned " + length + "." + (given.isEmpty() ? "" : "\r\nReason: " + given)));
+            dropConnection(c.getClient());
         }
         log.warn("Admin page: banned {} ({})", name, reason);
         json(ex, 200, Map.of("ok", true));
     }
 
-    /** Lifts the ban on a character's account and the machine and address bans that came with it, as !unban does. */
+    /** "1 minute", "90 minutes", "2 hours", "3 days". */
+    private static String span(long minutes) {
+        long n = minutes % 1440 == 0 ? minutes / 1440 : minutes % 60 == 0 ? minutes / 60 : minutes;
+        String unit = minutes % 1440 == 0 ? "day" : minutes % 60 == 0 ? "hour" : "minute";
+        return n + " " + unit + (n == 1 ? "" : "s");
+    }
+
+    /**
+     * Lifts the ban on a character's account, timed or for good, and the machine and address bans that came with it,
+     * as !unban does.
+     */
     private static void unban(HttpExchange ex, Map<String, Object> body) throws IOException, SQLException {
         String name = nameIn(body);
         int aid = Character.getAccountIdByName(name);
@@ -538,8 +580,9 @@ public final class AdminServer {
             throw new IllegalArgumentException("There is no character called " + name + ".");
         }
         try (Connection con = DatabaseConnection.getConnection()) {
-            try (PreparedStatement ps = con.prepareStatement("UPDATE accounts SET banned = -1 WHERE id = ?")) {
-                ps.setInt(1, aid);
+            try (PreparedStatement ps = con.prepareStatement("UPDATE accounts SET banned = IF(banned = 1, -1, banned), tempban = ? WHERE id = ?")) {
+                ps.setTimestamp(1, Timestamp.valueOf(DefaultDates.getTempban()));
+                ps.setInt(2, aid);
                 ps.executeUpdate();
             }
             for (String table : new String[] {"ipbans", "macbans"}) {
