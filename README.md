@@ -21,6 +21,7 @@ Java · Part of Voyage, with Voyage-Client and Voyage-Editor
 [![Last commit](https://img.shields.io/github/last-commit/comcad/Voyage-Server?style=flat-square)](https://github.com/comcad/Voyage-Server/commits/main)
 
 </div>
+<img width="2864" height="1440" alt="image" src="https://github.com/user-attachments/assets/2d72787d-5755-4b06-9a80-4650fbfe319b" />
 
 <br />
 
