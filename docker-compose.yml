@@ -1,5 +1,5 @@
 # Voyage-Server in one container: MySQL and the game server, with its admin page. Settings for this machine (where
-# the assets are, the admin page's password) go in a .env file beside this one: see README.md.
+# the assets are, the admin password) go in a .env file beside this one: copy .env.example to .env and fill it in.
 services:
   voyage-server:
     build: .

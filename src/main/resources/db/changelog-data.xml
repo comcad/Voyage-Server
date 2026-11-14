@@ -47,6 +47,7 @@
         <sqlFile path="db/data/152-drop-data.sql"/>
     </changeSet>
 
-    <!-- 161, upstream's admin account with a known password, is left out: a new database has no accounts. -->
+    <!-- 161, upstream's admin account with a known password, is left out: the server makes the admin account itself
+         on the first start, with the password in ADMIN_PASSWORD (net.server.admin.AdminAccount, db/admin-account.sql). -->
 
 </databaseChangeLog>

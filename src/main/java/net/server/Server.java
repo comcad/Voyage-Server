@@ -879,6 +879,7 @@ public class Server {
         }
 
         DatabaseMigrations.runDatabaseMigrations();
+        net.server.admin.AdminAccount.ensure();   // the one admin account, on a database that has none
 
         channelDependencies = registerChannelDependencies();
 

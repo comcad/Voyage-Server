@@ -171,7 +171,7 @@ server:
     #Admin page
     ADMIN_PORT: 0                       #The admin page's port: how the server is doing, who is playing, a notice to everyone, restart, the settings, the console. 0 leaves it off.
     ADMIN_HOST: "0.0.0.0"               #The address the admin page listens on.
-    ADMIN_PASSWORD: ""                  #The admin page's password. Without one the page stays off. The ADMIN_PORT and ADMIN_PASSWORD environment variables win when they are set.
+    ADMIN_PASSWORD: ""                  #The admin page's password, and the admin account's ("admin", made on the first start of a database that has none). Without one the page stays off and no admin account is made. The ADMIN_PORT and ADMIN_PASSWORD environment variables win when they are set.
 
     #Login Configuration
     WORLDS: 1                           #Initial number of worlds on the server.

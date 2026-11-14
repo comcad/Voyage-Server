@@ -58,7 +58,8 @@ public final class AdminServer {
         return env != null && !env.isBlank() ? env : fromFile == null ? "" : fromFile;
     }
 
-    private static String password() {
+    /** The admin page's password, and the admin account's when it is first made (AdminAccount). */
+    static String password() {
         return setting("ADMIN_PASSWORD", YamlConfig.config.server.ADMIN_PASSWORD);
     }
 
