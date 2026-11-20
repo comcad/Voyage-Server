@@ -25,6 +25,6 @@ public class LoginServerInitializer extends ServerChannelInitializer {
             return;
         }
 
-        initPipeline(socketChannel, client);
+        initPipeline(socketChannel, client, () -> SessionCoordinator.getInstance().closeLoginSession(client));
     }
 }

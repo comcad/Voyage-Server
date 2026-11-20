@@ -35,6 +35,6 @@ public class ChannelServerInitializer extends ServerChannelInitializer {
             return;
         }
 
-        initPipeline(socketChannel, client);
+        initPipeline(socketChannel, client, () -> SessionCoordinator.getInstance().closeSession(client, true));
     }
 }

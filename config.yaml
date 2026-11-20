@@ -219,6 +219,27 @@ server:
     USE_DEBUG_SHOW_RCVD_PACKET: false   #Prints on the cmd all received packet ids.
     USE_DEBUG_SHOW_RCVD_MVLIFE: false   #Prints on the cmd all received move life content.
     USE_DEBUG_SHOW_PACKET: false
+    # AUTHENTICATED_CLIENT - only your own Voyage web client may connect.
+    #   false (default): anyone connects, as on any Cosmic server. A key sent anyway is ignored.
+    #   true: every new connection to the login server and the channels must send CLIENT_KEY before
+    #         this server answers. The Voyage web client's relay sends it for its players, with the
+    #         same key set in Voyage-Client's conf/client.conf (Server.AuthenticatedClient = true,
+    #         Server.ClientKey = this key).
+    #   WARNING: while this is true the ORIGINAL MAPLESTORY CLIENT CANNOT CONNECT. It has no way to
+    #   send the key, so it waits for an answer that never comes and is dropped after 5 seconds.
+    #   Neither can a copy of the web client someone hosts themselves, nor bots or tools that talk to
+    #   this server directly. Only players coming through your own Voyage-Client web server get in.
+    #   Good to know:
+    #   - The key never reaches players' browsers; only the relay holds it. Keep config.yaml and
+    #     client.conf private, and use a long random key (32 characters or more).
+    #   - With this true and CLIENT_KEY empty, nothing can connect.
+    #   - Changing either setting takes a restart of this server, which disconnects everyone. Change
+    #     the key here and in client.conf together (and restart both), or players are turned away.
+    #   - A player turned away sees "This client is not made for this server." Refusals are logged
+    #     here as "Refused a client from ...".
+    #   - The admin page is not affected.
+    AUTHENTICATED_CLIENT: false
+    CLIENT_KEY: ""                      #The key the Voyage client's relay must send. See AUTHENTICATED_CLIENT.
     USE_SUPPLY_RATE_COUPONS: true       #Allows rate coupons to be sold through the Cash Shop.
     USE_IP_VALIDATION: false             #Enables IP checking when logging in.
     USE_CHARACTER_ACCOUNT_CHECK: false  #Enables one-character-per-account check when logging in. This might be resource intensive.

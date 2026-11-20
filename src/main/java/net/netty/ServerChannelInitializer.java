@@ -43,10 +43,27 @@ public abstract class ServerChannelInitializer extends ChannelInitializer<Socket
     }
 
     void initPipeline(SocketChannel socketChannel, Client client) {
+        initPipeline(socketChannel, client, () -> {});
+    }
+
+    /**
+     * The hello and the game's handlers. With AUTHENTICATED_CLIENT on they wait for the Voyage client's key
+     * (ClientKeyHandler): a connection without it is closed, and `refused` ends its session as its own close would.
+     * Off, they go at once, and a key sent anyway is taken off ahead of the game's traffic.
+     */
+    void initPipeline(SocketChannel socketChannel, Client client, Runnable refused) {
         final InitializationVector sendIv = InitializationVector.generateSend();
         final InitializationVector recvIv = InitializationVector.generateReceive();
+        if (YamlConfig.config.server.AUTHENTICATED_CLIENT) {
+            socketChannel.pipeline().addLast("ClientKey", new ClientKeyHandler(true, () -> {
+                writeInitialUnencryptedHelloPacket(socketChannel, sendIv, recvIv);
+                setUpHandlers(socketChannel.pipeline(), sendIv, recvIv, client);
+            }, refused));
+            return;
+        }
         writeInitialUnencryptedHelloPacket(socketChannel, sendIv, recvIv);
         setUpHandlers(socketChannel.pipeline(), sendIv, recvIv, client);
+        socketChannel.pipeline().addFirst("ClientKey", new ClientKeyHandler(false, null, null));
     }
 
     private void writeInitialUnencryptedHelloPacket(SocketChannel socketChannel, InitializationVector sendIv, InitializationVector recvIv) {

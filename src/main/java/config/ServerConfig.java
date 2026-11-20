@@ -63,6 +63,8 @@ public class ServerConfig {
     public boolean USE_DEBUG_SHOW_RCVD_PACKET;
     public boolean USE_DEBUG_SHOW_RCVD_MVLIFE;
     public boolean USE_DEBUG_SHOW_PACKET;
+    public boolean AUTHENTICATED_CLIENT;
+    public String CLIENT_KEY;
     public boolean USE_SUPPLY_RATE_COUPONS;
     public boolean USE_IP_VALIDATION;
     public boolean USE_CHARACTER_ACCOUNT_CHECK;
