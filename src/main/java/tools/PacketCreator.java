@@ -1510,11 +1510,8 @@ public class PacketCreator {
         p.writeByte(life.getController() == null ? 5 : 1);
         p.writeInt(life.getId());
 
-        if (requestController) {
-            encodeTemporary(p, life.getStati());    // thanks shot for noticing encode temporary buffs missing
-        } else {
-            p.skip(16);
-        }
+        // its buffs, for whoever sees it arrive (controller or not): the client reads them in both packets
+        encodeTemporary(p, life.getStati());
 
         p.writePos(life.getPosition());
         p.writeByte(life.getStance());
