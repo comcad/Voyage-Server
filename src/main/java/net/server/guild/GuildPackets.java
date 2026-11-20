@@ -375,10 +375,10 @@ public class GuildPackets {
             p.writeString(alliance.getRankTitle(i));
         }
         p.writeByte(alliance.getGuilds().size());
-        p.writeInt(alliance.getCapacity()); // probably capacity
         for (Integer guild : alliance.getGuilds()) {
             p.writeInt(guild);
         }
+        p.writeInt(alliance.getCapacity());
         p.writeString(alliance.getNotice());
         return p;
     }

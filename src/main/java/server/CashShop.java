@@ -248,7 +248,6 @@ public class CashShop {
                 boolean onSale = DataTool.getIntConvert("OnSale", item, 0) == 1;
                 loadedItems.put(sn, new CashItem(sn, itemId, price, period, count, onSale));
             }
-            CashItemFactory.items = loadedItems;
 
             Map<Integer, List<Integer>> loadedPackages = new HashMap<>();
             for (Data cashPackage : etc.getData("CashPackage.img").getChildren()) {
@@ -272,6 +271,14 @@ public class CashShop {
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
+            // an item the table puts on (or takes off) sale is bought as the Cash Shop shows it
+            for (SpecialCashItem special : loadedSpecialItems) {
+                CashItem item = loadedItems.get(special.getSN());
+                if (item != null && (special.getModifier() & 0x400) != 0) {
+                    loadedItems.put(item.sn, new CashItem(item.sn, item.itemId, item.price, item.period, item.count, special.getInfo() != 0));
+                }
+            }
+            CashItemFactory.items = loadedItems;
             CashItemFactory.specialcashitems = loadedSpecialItems;
         }
 

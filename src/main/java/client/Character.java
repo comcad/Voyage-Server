@@ -6708,6 +6708,7 @@ public class Character extends AbstractCharacterObject {
             ret.skinColor = SkinColor.getById(rs.getInt("skincolor"));
             ret.face = rs.getInt("face");
             ret.hair = rs.getInt("hair");
+            ret.familyId = rs.getInt("familyId");
 
             // skipping pets, probably unneeded here
 
@@ -6758,6 +6759,7 @@ public class Character extends AbstractCharacterObject {
         ret.skinColor = this.getSkinColor();
         ret.face = this.getFace();
         ret.hair = this.getHair();
+        ret.familyId = this.getFamilyId();
 
         // skipping pets, probably unneeded here
 

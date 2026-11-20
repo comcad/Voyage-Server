@@ -100,6 +100,8 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
         REQUEST_TIE(0x32),
         ANSWER_TIE(0x33),
         GIVE_UP(0x34),
+        REQUEST_RETREAT(0x36),
+        ANSWER_RETREAT(0x37),
         EXIT_AFTER_GAME(0x38),
         CANCEL_EXIT_AFTER_GAME(0x39),
         READY(0x3A),
@@ -443,6 +445,28 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                         game.broadcastToVisitor(PacketCreator.getMiniGameDenyTie(game));
                     } else {
                         game.broadcastToOwner(PacketCreator.getMiniGameDenyTie(game));
+                    }
+                }
+            } else if (mode == Action.REQUEST_RETREAT.getCode()) {
+                // Omok: withdraw your last move, if the other player agrees
+                MiniGame game = chr.getMiniGame();
+                if (game != null && game.requestRetreat(chr)) {
+                    if (game.isOwner(chr)) {
+                        game.broadcastToVisitor(PacketCreator.getMiniGameRequestRetreat());
+                    } else {
+                        game.broadcastToOwner(PacketCreator.getMiniGameRequestRetreat());
+                    }
+                }
+            } else if (mode == Action.ANSWER_RETREAT.getCode()) {
+                MiniGame game = chr.getMiniGame();
+                if (game != null && game.isAskedToRetreat(chr)) {
+                    if (p.readByte() != 0) {
+                        int[] back = game.acceptRetreat();
+                        game.broadcast(PacketCreator.getMiniGameRetreatResult(true, back[0], back[1]));
+                    } else if (game.denyRetreat() == 0) {
+                        game.broadcastToOwner(PacketCreator.getMiniGameRetreatResult(false, 0, 0));
+                    } else {
+                        game.broadcastToVisitor(PacketCreator.getMiniGameRetreatResult(false, 0, 0));
                     }
                 }
             } else if (mode == Action.SKIP.getCode()) {

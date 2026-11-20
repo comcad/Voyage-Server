@@ -142,7 +142,7 @@ public enum RecvOpcode {
     RING_ACTION(0x89),
     WEDDING_ACTION(0x8A),
     WEDDING_TALK(0x8B),
-    WEDDING_TALK_MORE(0x8B),
+    WEDDING_TALK_MORE(0x8C), // a guest's blessing (the client's Yes on the cathedral's blessing step)
     ALLIANCE_OPERATION(0x8F),
     DENY_ALLIANCE_REQUEST(0x90),
     OPEN_FAMILY_PEDIGREE(0x91),

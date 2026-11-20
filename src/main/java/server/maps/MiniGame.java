@@ -27,8 +27,11 @@ import net.packet.Packet;
 import net.server.Server;
 import tools.PacketCreator;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -45,6 +48,9 @@ public class MiniGame extends AbstractMapObject {
     private int piecetype;
     private int inprogress = 0;
     private final int[] piece = new int[250];
+    private final Deque<int[]> moves = new ArrayDeque<>();   // Omok stones in the order placed: {cell, side} (0 owner, 1 visitor)
+    private int retreatFrom = -1;   // the side asking to withdraw its last move, while the other is asked
+    private int retreatUsed = 0;    // which sides have had a withdraw this match (bit 0 owner, bit 1 visitor)
     private final List<Integer> list4x3 = new ArrayList<>();
     private final List<Integer> list5x4 = new ArrayList<>();
     private final List<Integer> list6x5 = new ArrayList<>();
@@ -207,6 +213,56 @@ public class MiniGame extends AbstractMapObject {
         inprogress = 1;
         ownerquit = false;
         visitorquit = false;
+        // a fresh board each match: one ended by a give-up, a draw or a forfeit kept its stones before
+        Arrays.fill(piece, 0);
+        moves.clear();
+        retreatFrom = -1;
+        retreatUsed = 0;
+    }
+
+    private int sideOf(Character chr) {
+        return isOwner(chr) ? 0 : 1;
+    }
+
+    /** Asking to withdraw your last Omok move: once a match, one ask at a time, with a stone of yours on the board. */
+    public boolean requestRetreat(Character chr) {
+        int side = sideOf(chr);
+        if (GameType != MiniGameType.OMOK || !isMatchInProgress() || retreatFrom != -1 || (retreatUsed & (1 << side)) != 0) {
+            return false;
+        }
+        if (moves.stream().noneMatch(m -> m[1] == side)) {
+            return false;
+        }
+        retreatFrom = side;
+        return true;
+    }
+
+    /** Whether chr is the one being asked to let the other withdraw. */
+    public boolean isAskedToRetreat(Character chr) {
+        return retreatFrom != -1 && retreatFrom != sideOf(chr);
+    }
+
+    /** The asker's side, its stones taken back to and including its last one: {count, side} (the side moves next). */
+    public int[] acceptRetreat() {
+        int side = retreatFrom, count = 0;
+        while (!moves.isEmpty()) {
+            int[] m = moves.pollLast();
+            piece[m[0]] = 0;
+            count++;
+            if (m[1] == side) {
+                break;
+            }
+        }
+        retreatUsed |= 1 << side;
+        retreatFrom = -1;
+        return new int[]{count, side};
+    }
+
+    /** The asker's side, its withdraw turned down. */
+    public int denyRetreat() {
+        int side = retreatFrom;
+        retreatFrom = -1;
+        return side;
     }
 
     public void setQuitAfterGame(Character player, boolean quit) {
@@ -432,6 +488,8 @@ public class MiniGame extends AbstractMapObject {
         int slot = move2 * 15 + move1 + 1;
         if (piece[slot] == 0) {
             piece[slot] = type;
+            moves.addLast(new int[]{slot, sideOf(chr)});
+            retreatFrom = -1;
             this.broadcast(PacketCreator.getMiniGameMoveOmok(this, move1, move2, type));
             for (int y = 0; y < 15; y++) {
                 for (int x = 0; x < 11; x++) {

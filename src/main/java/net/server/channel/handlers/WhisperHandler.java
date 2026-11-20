@@ -50,6 +50,17 @@ public final class WhisperHandler extends AbstractPacketHandler {
         String name = p.readString();
         Character target = c.getWorldServer().getPlayerStorage().getCharacterByName(name);
 
+        if (request == (WhisperFlag.WHISPER | WhisperFlag.BLOCKED)) {
+            // the client hid a whisper (whispers off, or the sender on its Blacklist): the sender is told, and a
+            // hidden GM above them stays unfound, as a whisper to them would
+            if (target != null) {
+                Character receiver = c.getPlayer();
+                boolean hidden = receiver.isHidden() && receiver.gmLevel() > target.gmLevel();
+                target.sendPacket(PacketCreator.getWhisperBlocked(receiver.getName(), hidden));
+            }
+            return;
+        }
+
         if (target == null) {
             c.sendPacket(PacketCreator.getWhisperResult(name, false));
             return;

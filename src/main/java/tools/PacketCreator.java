@@ -348,7 +348,7 @@ public class PacketCreator {
         addCharStats(p, chr);
         addCharLook(p, chr, false);
         if (!viewall) {
-            p.writeByte(0);
+            p.writeByte(chr.getFamilyId() > 0 ? 1 : 0); // in a family: the client's delete warning says the family is left
         }
         if (chr.isGM() || chr.isGmJob()) {  // thanks Daddy Egg (Ubaware), resinate for noticing GM jobs crashing on non-GM players account
             p.writeByte(0);
@@ -4752,6 +4752,25 @@ public class PacketCreator {
         return p;
     }
 
+    /** Omok: the other player asks to withdraw their last move. */
+    public static Packet getMiniGameRequestRetreat() {
+        OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
+        p.writeByte(PlayerInteractionHandler.Action.REQUEST_RETREAT.getCode());
+        return p;
+    }
+
+    /** Omok: the withdraw answered; accepted, how many stones come off the board and which side (0 owner, 1 visitor) moves next. */
+    public static Packet getMiniGameRetreatResult(boolean accepted, int count, int side) {
+        OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
+        p.writeByte(PlayerInteractionHandler.Action.ANSWER_RETREAT.getCode());
+        p.writeBool(accepted);
+        if (accepted) {
+            p.writeByte(count);
+            p.writeByte(side);
+        }
+        return p;
+    }
+
     public static Packet getMiniGameDenyTie(MiniGame game) {
         OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
         p.writeByte(PlayerInteractionHandler.Action.ANSWER_TIE.getCode());
@@ -5798,6 +5817,18 @@ public class PacketCreator {
         return p;
     }
 
+    /**
+     * The receiver had whispers off or the sender on its Blacklist: the sender reads "'name' have currently disabled
+     * whispers.", or "Unable to find 'name'" when notFound.
+     */
+    public static Packet getWhisperBlocked(String receiver, boolean notFound) {
+        OutPacket p = OutPacket.create(SendOpcode.WHISPER);
+        p.writeByte(WhisperFlag.WHISPER | WhisperFlag.BLOCKED);
+        p.writeString(receiver);
+        p.writeBool(notFound);
+        return p;
+    }
+
     public static Packet getWhisperReceive(String sender, int channel, boolean fromAdmin, String message) {
         OutPacket p = OutPacket.create(SendOpcode.WHISPER);
         p.writeByte(WhisperFlag.WHISPER | WhisperFlag.RECEIVE);
@@ -6409,11 +6440,8 @@ public class PacketCreator {
                 p.writeString(messages[i]);
             }
         }
-        for (int i = 0; i < 10; i++) {
-            p.writeByte(channel - 1);
-        }
+        p.writeByte(channel - 1);
         p.writeByte(showEar ? 1 : 0);
-        p.writeByte(1);
         return p;
     }
 

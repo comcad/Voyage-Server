@@ -20,27 +20,50 @@
 
 package net.server.channel.handlers;
 
+import client.Character;
 import client.Client;
+import config.YamlConfig;
+import constants.id.MapId;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import scripting.event.EventInstanceManager;
 import tools.PacketCreator;
-import tools.packets.WeddingPackets;
 
 /**
- * @author Ronan
+ * A guest's blessing (no fields): the client's Yes to "Do you want to bless this couple?" on the cathedral's blessing
+ * step. Counted once per guest while the blessing is open, as the officiant's own blessing is; the client expects no
+ * answer.
  */
 public final class WeddingTalkMoreHandler extends AbstractPacketHandler {
-
     @Override
     public final void handlePacket(InPacket p, Client c) {
-        EventInstanceManager eim = c.getPlayer().getEventInstance();
-        if (eim != null && !(c.getPlayer().getId() == eim.getIntProperty("groomId") || c.getPlayer().getId() == eim.getIntProperty("brideId"))) {
-            eim.gridInsert(c.getPlayer(), 1);
-            c.getPlayer().dropMessage(5, "High Priest John: Your blessings have been added to their love. What a noble act for a lovely couple!");
+        Character chr = c.getPlayer();
+        EventInstanceManager eim = chr.getEventInstance();
+        if (eim == null || chr.getMapId() != MapId.CATHEDRAL_WEDDING_ALTAR) {
+            return;
+        }
+        if (chr.getId() == eim.getIntProperty("groomId") || chr.getId() == eim.getIntProperty("brideId")) {
+            return;
+        }
+        if (eim.getIntProperty("weddingStage") != 1 || eim.getIntProperty("guestBlessings") != 1 || eim.gridCheck(chr) != -1) {
+            return;
         }
 
-        c.sendPacket(WeddingPackets.OnWeddingProgress(true, 0, 0, (byte) 3));
-        c.sendPacket(PacketCreator.enableActions());
+        eim.gridInsert(chr, 1);
+        chr.dropMessage(5, "High Priest John: Your blessings have been added to their love. What a noble act for a lovely couple!");
+        if (YamlConfig.config.server.WEDDING_BLESSER_SHOWFX) {
+            showBlessing(chr);
+        } else {
+            showBlessing(eim.getPlayerById(eim.getIntProperty("groomId")));
+            showBlessing(eim.getPlayerById(eim.getIntProperty("brideId")));
+        }
+    }
+
+    private static void showBlessing(Character target) {
+        if (target == null) {
+            return;
+        }
+        target.sendPacket(PacketCreator.showSpecialEffect(9));
+        target.getMap().broadcastMessage(target, PacketCreator.showForeignEffect(target.getId(), 9), false);
     }
 }
