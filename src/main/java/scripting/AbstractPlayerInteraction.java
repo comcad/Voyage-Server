@@ -969,6 +969,7 @@ public class AbstractPlayerInteraction {
             npc.setFh(map.getFootholds().findBelow(pos).getId());
             map.addMapObject(npc);
             map.broadcastMessage(PacketCreator.spawnNPC(npc));
+            map.giveNpcController(npc);
         }
     }
 

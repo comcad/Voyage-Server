@@ -21,11 +21,14 @@
 */
 package net.server.channel.handlers;
 
+import client.Character;
 import client.Client;
 import net.AbstractPacketHandler;
 import net.opcodes.SendOpcode;
 import net.packet.InPacket;
 import net.packet.OutPacket;
+import server.life.NPC;
+import server.maps.MapObject;
 
 public final class NPCAnimationHandler extends AbstractPacketHandler {
     @Override
@@ -34,16 +37,26 @@ public final class NPCAnimationHandler extends AbstractPacketHandler {
             return;
         }
 
+        // only the NPC's controller runs it, and what it sends goes to everyone on the map (the controller too: its client
+        // walks the path only once it comes back)
+        final int length = p.available();
+        if (length < 6) {
+            return;
+        }
+        final Character chr = c.getPlayer();
+        final int oid = p.readInt();
+        final MapObject obj = chr.getMap().getMapObject(oid);
+        if (!(obj instanceof NPC npc) || npc.getController() != chr) {
+            return;
+        }
         OutPacket op = OutPacket.create(SendOpcode.NPC_ACTION);
-        int length = p.available();
+        op.writeInt(oid);
         if (length == 6) { // NPC Talk
-            op.writeInt(p.readInt());
             op.writeByte(p.readByte());   // 2 bytes, thanks resinate
             op.writeByte(p.readByte());
-        } else if (length > 6) { // NPC Move
-            byte[] bytes = p.readBytes(length - 9);
-            op.writeBytes(bytes);
+        } else { // NPC Move: its path without the key states and the box at the end
+            op.writeBytes(p.readBytes(length - 4 - 9));
         }
-        c.sendPacket(op);
+        chr.getMap().broadcastMessage(op);
     }
 }

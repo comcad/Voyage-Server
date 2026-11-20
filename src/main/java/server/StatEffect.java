@@ -126,7 +126,7 @@ import java.util.Map;
  * @author Frz
  * @author Ronan
  */
-public class StatEffect {
+public class StatEffect implements Cloneable {
     private short watk, matk, wdef, mdef, acc, avoid, speed, jump;
     private short hp, mp;
     private double hpR, mpR;
@@ -1884,6 +1884,17 @@ public class StatEffect {
 
     public int getDuration() {
         return duration;
+    }
+
+    /** This effect giving only the buffs given (a shallow copy): Hex of Beholder casts one of its stats at a time. */
+    public StatEffect withOnlyStatups(List<Pair<BuffStat, Integer>> only) {
+        try {
+            StatEffect copy = (StatEffect) super.clone();
+            copy.statups = only;
+            return copy;
+        } catch (CloneNotSupportedException e) {
+            return this;
+        }
     }
 
     public List<Pair<BuffStat, Integer>> getStatups() {

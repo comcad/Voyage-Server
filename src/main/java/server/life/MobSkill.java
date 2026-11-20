@@ -202,10 +202,14 @@ public class MobSkill {
         Map<MonsterStatus, Integer> stats = new EnumMap<>(MonsterStatus.class);
         List<Integer> reflection = new ArrayList<>();
         switch (id.type()) {
-            case ATTACK_UP, ATTACK_UP_M, PAD -> stats.put(MonsterStatus.WEAPON_ATTACK_UP, x);
-            case MAGIC_ATTACK_UP, MAGIC_ATTACK_UP_M, MAD -> stats.put(MonsterStatus.MAGIC_ATTACK_UP, x);
-            case DEFENSE_UP, DEFENSE_UP_M, PDR -> stats.put(MonsterStatus.WEAPON_DEFENSE_UP, x);
-            case MAGIC_DEFENSE_UP, MAGIC_DEFENSE_UP_M, MDR -> stats.put(MonsterStatus.MAGIC_DEFENSE_UP, x);
+            case ATTACK_UP, ATTACK_UP_M -> stats.put(MonsterStatus.WEAPON_ATTACK_UP, x);
+            case MAGIC_ATTACK_UP, MAGIC_ATTACK_UP_M -> stats.put(MonsterStatus.MAGIC_ATTACK_UP, x);
+            case DEFENSE_UP, DEFENSE_UP_M -> stats.put(MonsterStatus.WEAPON_DEFENSE_UP, x);
+            case MAGIC_DEFENSE_UP, MAGIC_DEFENSE_UP_M -> stats.put(MonsterStatus.MAGIC_DEFENSE_UP, x);
+            case PAD -> stats.put(MonsterStatus.WATK, x);
+            case MAD -> stats.put(MonsterStatus.MATK, x);
+            case PDR -> stats.put(MonsterStatus.WDEF, x);
+            case MDR -> stats.put(MonsterStatus.MDEF, x);
             case HEAL_M -> applyHealEffect(skill, monster);
             case SEAL -> disease = Disease.SEAL;
             case DARKNESS -> disease = Disease.DARKNESS;

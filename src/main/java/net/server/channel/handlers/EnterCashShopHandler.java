@@ -78,9 +78,11 @@ public class EnterCashShopHandler extends AbstractPacketHandler {
             mc.forfeitExpirableQuests();
             mc.cancelQuestExpirationTask();
 
+            // the gifts go into the locker first, so the locker list (0x4B) already holds them; their notes follow (0x4D)
+            final var gifts = mc.getCashShop().loadGifts();
             c.sendPacket(PacketCreator.openCashShop(c, false));
             c.sendPacket(PacketCreator.showCashInventory(c));
-            c.sendPacket(PacketCreator.showGifts(mc.getCashShop().loadGifts()));
+            c.sendPacket(PacketCreator.showGifts(gifts));
             c.sendPacket(PacketCreator.showWishList(mc, false));
             c.sendPacket(PacketCreator.showCash(mc));
 

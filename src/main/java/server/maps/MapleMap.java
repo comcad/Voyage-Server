@@ -2625,6 +2625,14 @@ public class MapleMap {
             chrWLock.unlock();
         }
 
+        // the NPCs it ran go to another player here (or to nobody)
+        for (MapObject o : getMapObjects()) {
+            if (o instanceof NPC npc && npc.getController() == chr) {
+                npc.setController(null);
+                giveNpcController(npc);
+            }
+        }
+
         if (MiniDungeonInfo.isDungeonMap(mapid)) {
             MiniDungeon mmd = cserv.getMiniDungeon(mapid);
             if (mmd != null) {
@@ -2868,6 +2876,31 @@ public class MapleMap {
                 return true;
             default:
                 return false;
+        }
+    }
+
+    /**
+     * An NPC without a controller on this map gets one: any player here, asked with SPAWN_NPC_REQUEST_CONTROLLER (none
+     * while nobody is here; the next to arrive takes it, see NPC.sendSpawnData).
+     */
+    public void giveNpcController(NPC npc) {
+        final Character ctrl = npc.getController();
+        if (ctrl != null && ctrl.getMap() == this && ctrl.isLoggedinWorld()) {
+            return;
+        }
+        Character next = null;
+        chrRLock.lock();
+        try {
+            for (Character c : characters) {
+                next = c;
+                break;
+            }
+        } finally {
+            chrRLock.unlock();
+        }
+        npc.setController(next);
+        if (next != null) {
+            next.sendPacket(PacketCreator.spawnNPCRequestController(npc, true));
         }
     }
 
@@ -3927,6 +3960,7 @@ public class MapleMap {
                         if (!npc.isHidden()) //Should only be hidden upon changing maps
                         {
                             broadcastMessage(PacketCreator.spawnNPC(npc));
+                            giveNpcController(npc);
                         }
                     }
                 }

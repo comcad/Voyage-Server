@@ -113,6 +113,7 @@ import server.movement.LifeMovementFragment;
 import java.awt.*;
 import java.net.InetAddress;
 import java.sql.SQLException;
+import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -1157,7 +1158,7 @@ public class PacketCreator {
         p.writeByte(summon.getStance());    //bMoveAction & foothold, found thanks to Rien dev team
         p.writeShort(0);
         p.writeByte(summon.getMovementType().getValue()); // 0 = don't move, 1 = follow (4th mage summons?), 2/4 = only tele follow, 3 = bird follow
-        p.writeBool(!summon.isPuppet()); // 0 and the summon can't attack - but puppets don't attack with 1 either ^.-
+        p.writeByte(summon.getAssistType()); // 0 does nothing (puppets), 1 attacks, 2 the Beholder's Aura and Hex
         p.writeBool(!animated);
         return p;
     }
@@ -1445,14 +1446,9 @@ public class PacketCreator {
         int pCounter = -1;
         int mCounter = -1;
 
-        stati = stati.entrySet()  // to patch some status crashing players
-                .stream()
-                .filter(e -> !(e.getKey().equals(MonsterStatus.WATK) || e.getKey().equals(MonsterStatus.WDEF)))
-                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-
         writeLongEncodeTemporaryMask(p, stati.keySet());    // packet structure mapped thanks to Eric
 
-        for (Entry<MonsterStatus, MonsterStatusEffect> s : stati.entrySet()) {
+        for (Entry<MonsterStatus, MonsterStatusEffect> s : inMobStatReadOrder(stati)) {
             MonsterStatusEffect mse = s.getValue();
             p.writeShort(mse.getStati().get(s.getKey()));
 
@@ -1992,7 +1988,7 @@ public class PacketCreator {
         Pet[] pet = chr.getPets();
         for (int i = 0; i < 3; i++) {
             if (pet[i] != null) {
-                addPetInfo(p, pet[i], false);
+                addPetInfo(p, chr, pet[i], false);
             }
         }
         p.writeByte(0); //end of pets
@@ -2377,7 +2373,7 @@ public class PacketCreator {
                                       int speed, int direction, int display) {
         p.writeInt(chr.getId());
         p.writeByte(numAttackedAndDamage);
-        p.writeByte(0x5B);//?
+        p.writeByte(chr.getLevel());   // the attacker's level: the client picks a skill's CharLevel art by it
         p.writeByte(skilllevel);
         if (skilllevel > 0) {
             p.writeInt(skill);
@@ -3080,18 +3076,34 @@ public class PacketCreator {
     }
 
     private static void writeLongEncodeTemporaryMask(final OutPacket p, Collection<MonsterStatus> stati) {
+        // the client's 16-byte mask: its 4th int is bits 0-31, its 3rd bits 32-63 (the "first" statuses)
         int[] masks = new int[4];
-
         for (MonsterStatus statup : stati) {
-            int pos = statup.isFirst() ? 0 : 2;
-            for (int i = 0; i < 2; i++) {
-                masks[pos + i] |= statup.getValue() >> 32 * i;
-            }
+            masks[statup.isFirst() ? 2 : 3] |= statup.getValue();
         }
-
         for (int mask : masks) {
             p.writeInt(mask);
         }
+    }
+
+    /** The order the client reads a monster's statuses in, by bit: 0-15, 18, 19, 16, 17, 21, 22, 24-26, 28-30, 32-34. */
+    private static final int[] MOB_STAT_READ_ORDER = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 19, 16, 17, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34};
+
+    private static int mobStatReadPlace(MonsterStatus stat) {
+        final int bit = Integer.numberOfTrailingZeros(stat.getValue()) + (stat.isFirst() ? 32 : 0);
+        for (int i = 0; i < MOB_STAT_READ_ORDER.length; i++) {
+            if (MOB_STAT_READ_ORDER[i] == bit) {
+                return i;
+            }
+        }
+        return MOB_STAT_READ_ORDER.length + bit;
+    }
+
+    /** A monster's statuses in the order the client reads their values. */
+    private static <V> List<Map.Entry<MonsterStatus, V>> inMobStatReadOrder(Map<MonsterStatus, V> stati) {
+        final List<Map.Entry<MonsterStatus, V>> list = new ArrayList<>(stati.entrySet());
+        list.sort(Comparator.comparingInt(e -> mobStatReadPlace(e.getKey())));
+        return list;
     }
 
     public static Packet cancelDebuff(long mask) {
@@ -3993,7 +4005,7 @@ public class PacketCreator {
         p.writeInt(oid);
         p.writeLong(0);
         writeIntMask(p, stati);
-        for (Map.Entry<MonsterStatus, Integer> stat : stati.entrySet()) {
+        for (Map.Entry<MonsterStatus, Integer> stat : inMobStatReadOrder(stati)) {
             p.writeShort(stat.getValue());
             if (mse.isMonsterSkill()) {
                 writeMobSkillId(p, mse.getMobSkill().getId());
@@ -4073,12 +4085,13 @@ public class PacketCreator {
         return p;
     }
 
-    public static Packet damageSummon(int cid, int oid, int damage, int monsterIdFrom) {
+    /** A summon hit: its owner, the summon, the attack it was hit by (as its owner's client sent it), the damage, the monster, its side. */
+    public static Packet damageSummon(int cid, int oid, int attack, int damage, int monsterIdFrom) {
         final OutPacket p = OutPacket.create(SendOpcode.DAMAGE_SUMMON);
         p.writeInt(cid);
         p.writeInt(oid);
-        p.writeByte(12);
-        p.writeInt(damage);         // damage display doesn't seem to work...
+        p.writeByte(attack);
+        p.writeInt(damage);
         p.writeInt(monsterIdFrom);
         p.writeByte(0);
         return p;
@@ -4105,7 +4118,8 @@ public class PacketCreator {
     public static Packet updateBuddylist(Collection<BuddylistEntry> buddylist) {
         OutPacket p = OutPacket.create(SendOpcode.BUDDYLIST);
         p.writeByte(7);
-        p.writeByte(buddylist.size());
+        final int shown = (int) buddylist.stream().filter(BuddylistEntry::isVisible).count();   // the count must match the entries
+        p.writeByte(shown);
         for (BuddylistEntry buddy : buddylist) {
             if (buddy.isVisible()) {
                 p.writeInt(buddy.getCharacterId()); // cid
@@ -4116,7 +4130,7 @@ public class PacketCreator {
                 p.writeInt(0);//mapid?
             }
         }
-        for (int x = 0; x < buddylist.size(); x++) {
+        for (int x = 0; x < shown; x++) {
             p.writeInt(0);//mapid?
         }
         return p;
@@ -4432,7 +4446,15 @@ public class PacketCreator {
         return p;
     }
 
-    private static void addPetInfo(final OutPacket p, Pet pet, boolean showpet) {
+    /** Pet Label Ring (1822000) and Pet Quote Ring (1832000) slots, by the pet's place: its name tag and chat balloon. */
+    private static final short[] PET_LABEL_SLOTS = {-121, -131, -139}, PET_QUOTE_SLOTS = {-129, -132, -140};
+
+    private static boolean petRingWorn(Character chr, Pet pet, short[] slots) {
+        final int i = chr == null ? -1 : chr.getPetIndex(pet);
+        return i >= 0 && i < slots.length && chr.getInventory(InventoryType.EQUIPPED).getItem(slots[i]) != null;
+    }
+
+    private static void addPetInfo(final OutPacket p, Character chr, Pet pet, boolean showpet) {
         p.writeByte(1);
         if (showpet) {
             p.writeByte(0);
@@ -4443,7 +4465,9 @@ public class PacketCreator {
         p.writeLong(pet.getUniqueId());
         p.writePos(pet.getPos());
         p.writeByte(pet.getStance());
-        p.writeInt(pet.getFh());
+        p.writeShort(pet.getFh());
+        p.writeBool(petRingWorn(chr, pet, PET_LABEL_SLOTS));   // its name tag (info/nameTag)
+        p.writeBool(petRingWorn(chr, pet, PET_QUOTE_SLOTS));   // its chat balloon (info/chatBalloon)
     }
 
     public static Packet showPet(Character chr, Pet pet, boolean remove, boolean hunger) {
@@ -4454,7 +4478,7 @@ public class PacketCreator {
             p.writeByte(0);
             p.writeBool(hunger);
         } else {
-            addPetInfo(p, pet, true);
+            addPetInfo(p, chr, pet, true);
         }
         return p;
     }
@@ -4469,14 +4493,24 @@ public class PacketCreator {
     }
 
     public static Packet petChat(int cid, byte index, int act, String text) {
+        return petChat(cid, index, act, text, false);
+    }
+
+    /** A pet's line: balloon, its Quote Ring is worn (the client then draws its own chat balloon). */
+    public static Packet petChat(int cid, byte index, int act, String text, boolean balloon) {
         final OutPacket p = OutPacket.create(SendOpcode.PET_CHAT);
         p.writeInt(cid);
         p.writeByte(index);
         p.writeByte(0);
         p.writeByte(act);
         p.writeString(text);
-        p.writeByte(0);
+        p.writeBool(balloon);
         return p;
+    }
+
+    /** Whether the pet at this place has its Quote Ring on. */
+    public static boolean petQuoteRing(Character chr, int index) {
+        return index >= 0 && index < PET_QUOTE_SLOTS.length && chr.getInventory(InventoryType.EQUIPPED).getItem(PET_QUOTE_SLOTS[index]) != null;
     }
 
     public static Packet petFoodResponse(int cid, byte index, boolean success, boolean balloonType) {
@@ -4566,11 +4600,12 @@ public class PacketCreator {
         return p;
     }
 
-    public static Packet summonSkill(int cid, int summonSkillId, int newStance) {
+    /** A summon's pose for others: its owner, the summon's object id, the action (6-11 skill1-skill6; bit 7 its side). */
+    public static Packet summonSkill(int cid, int summonOid, int action) {
         final OutPacket p = OutPacket.create(SendOpcode.SUMMON_SKILL);
         p.writeInt(cid);
-        p.writeInt(summonSkillId);
-        p.writeByte(newStance);
+        p.writeInt(summonOid);
+        p.writeByte(action);
         return p;
     }
 
@@ -7009,9 +7044,10 @@ public class PacketCreator {
         return p;
     }
 
-    public static Packet showBoughtCashRing(Item ring, String recipient, int accountId) {
+    /** A ring bought for a partner: 0x87 for a couple ring, 0x91 for a friendship ring (the client shows both alike). */
+    public static Packet showBoughtCashRing(Item ring, String recipient, int accountId, int result) {
         final OutPacket p = OutPacket.create(SendOpcode.CASHSHOP_OPERATION);
-        p.writeByte(0x87);
+        p.writeByte(result);
         addCashItemInformation(p, ring, accountId);
         p.writeString(recipient);
         p.writeInt(ring.getItemId());
@@ -7104,6 +7140,34 @@ public class PacketCreator {
             addCashItemInformation(p, gift.getLeft(), 0, gift.getRight());
         }
 
+        return p;
+    }
+
+    /** A gift's failure (0x5F): the client says why, and in a run of gifts sends the next one itself (no 0x144 after it). */
+    public static Packet showGiftFailed(byte reason) {
+        final OutPacket p = OutPacket.create(SendOpcode.CASHSHOP_OPERATION);
+        p.writeByte(0x5F);
+        p.writeByte(reason);
+        return p;
+    }
+
+    /** A package given from a wish list (0x8B): to whom, the package, two shorts the client doesn't use, the NX Prepaid spent. */
+    public static Packet showPackageGiftSucceed(String to, CashItem item) {
+        final OutPacket p = OutPacket.create(SendOpcode.CASHSHOP_OPERATION);
+        p.writeByte(0x8B);
+        p.writeString(to);
+        p.writeInt(item.getItemId());
+        p.writeShort(0);
+        p.writeShort(0);
+        p.writeInt(item.getPrice());
+        return p;
+    }
+
+    /** A package gift's failure (0x8C): why (0xA2 - 0xA4 make the client leave the Cash Shop). */
+    public static Packet showPackageGiftFailed(byte reason) {
+        final OutPacket p = OutPacket.create(SendOpcode.CASHSHOP_OPERATION);
+        p.writeByte(0x8C);
+        p.writeByte(reason);
         return p;
     }
 

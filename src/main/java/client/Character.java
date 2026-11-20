@@ -4445,49 +4445,14 @@ public class Character extends AbstractCharacterObject {
         } else if (effect.isBerserk()) {
             checkBerserk(isHidden());
         } else if (effect.isBeholder()) {
-            final int beholder = DarkKnight.BEHOLDER;
+            // its Aura and Hex come from its owner's client (BeholderHandler), which the summon's assist type 2 lets act
             if (beholderHealingSchedule != null) {
                 beholderHealingSchedule.cancel(false);
+                beholderHealingSchedule = null;
             }
             if (beholderBuffSchedule != null) {
                 beholderBuffSchedule.cancel(false);
-            }
-            Skill bHealing = SkillFactory.getSkill(DarkKnight.AURA_OF_BEHOLDER);
-            int bHealingLvl = getSkillLevel(bHealing);
-            if (bHealingLvl > 0) {
-                final StatEffect healEffect = bHealing.getEffect(bHealingLvl);
-                int healInterval = (int) SECONDS.toMillis(healEffect.getX());
-                beholderHealingSchedule = TimerManager.getInstance().register(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (awayFromWorld.get()) {
-                            return;
-                        }
-
-                        addHP(healEffect.getHp());
-                        sendPacket(PacketCreator.showOwnBuffEffect(beholder, 2));
-                        getMap().broadcastMessage(Character.this, PacketCreator.summonSkill(getId(), beholder, 5), true);
-                        getMap().broadcastMessage(Character.this, PacketCreator.showOwnBuffEffect(beholder, 2), false);
-                    }
-                }, healInterval, healInterval);
-            }
-            Skill bBuff = SkillFactory.getSkill(DarkKnight.HEX_OF_BEHOLDER);
-            if (getSkillLevel(bBuff) > 0) {
-                final StatEffect buffEffect = bBuff.getEffect(getSkillLevel(bBuff));
-                int buffInterval = (int) SECONDS.toMillis(buffEffect.getX());
-                beholderBuffSchedule = TimerManager.getInstance().register(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (awayFromWorld.get()) {
-                            return;
-                        }
-
-                        buffEffect.applyTo(Character.this);
-                        sendPacket(PacketCreator.showOwnBuffEffect(beholder, 2));
-                        getMap().broadcastMessage(Character.this, PacketCreator.summonSkill(getId(), beholder, (int) (Math.random() * 3) + 6), true);
-                        getMap().broadcastMessage(Character.this, PacketCreator.showBuffEffect(getId(), beholder, 2), false);
-                    }
-                }, buffInterval, buffInterval);
+                beholderBuffSchedule = null;
             }
         } else if (effect.isRecovery()) {
             int healInterval = (YamlConfig.config.server.USE_ULTRA_RECOVERY) ? 2000 : 5000;

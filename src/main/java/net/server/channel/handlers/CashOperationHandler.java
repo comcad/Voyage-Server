@@ -120,14 +120,15 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                         c.enableCSActions();
                         return;
                     }
+                    // a gift's failure is its own result (0x5F): the client says why and goes on to a run's next gift
                     if (!checkBirthday(c, birthday)) {
-                        c.sendPacket(PacketCreator.showCashShopMessage((byte) 0xC4));
+                        c.sendPacket(PacketCreator.showGiftFailed((byte) 0xC4));
                         return;
                     } else if (recipient == null) {
-                        c.sendPacket(PacketCreator.showCashShopMessage((byte) 0xA9));
+                        c.sendPacket(PacketCreator.showGiftFailed((byte) 0xA9));
                         return;
                     } else if (recipient.get("accountid").equals(String.valueOf(c.getAccID()))) {
-                        c.sendPacket(PacketCreator.showCashShopMessage((byte) 0xA8));
+                        c.sendPacket(PacketCreator.showGiftFailed((byte) 0xA8));
                         return;
                     }
                     cs.gainCash(4, cItem, chr.getWorld());
@@ -331,7 +332,7 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                                 Pair<Integer, Integer> rings = Ring.createRing(itemRing.getItemId(), chr, partner);
                                 eqp.setRingId(rings.getLeft());
                                 cs.addToInventory(eqp);
-                                c.sendPacket(PacketCreator.showBoughtCashItem(eqp, c.getAccID()));
+                                c.sendPacket(PacketCreator.showBoughtCashRing(eqp, partner.getName(), c.getAccID(), 0x87));
                                 cs.gainCash(toCharge, itemRing, chr.getWorld());
                                 cs.gift(partner.getId(), chr.getName(), text, eqp.getSN(), rings.getRight());
                                 chr.addCrushRing(Ring.loadFromDb(rings.getLeft()));
@@ -390,7 +391,7 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                                 Pair<Integer, Integer> rings = Ring.createRing(itemRing.getItemId(), chr, partner);
                                 eqp.setRingId(rings.getLeft());
                                 cs.addToInventory(eqp);
-                                c.sendPacket(PacketCreator.showBoughtCashRing(eqp, partner.getName(), c.getAccID()));
+                                c.sendPacket(PacketCreator.showBoughtCashRing(eqp, partner.getName(), c.getAccID(), 0x91));
                                 cs.gainCash(payment, -itemRing.getPrice());
                                 cs.gift(partner.getId(), chr.getName(), text, eqp.getSN(), rings.getRight());
                                 chr.addFriendshipRing(Ring.loadFromDb(rings.getLeft()));
@@ -462,6 +463,39 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                         }
                     }
                     c.enableCSActions();
+                } else if (action == 0x1F) { // a package (910xxxx) from a friend's wish list, given as a gift with NX Prepaid
+                    int birthday = p.readInt();
+                    CashItem cItem = CashItemFactory.getItem(p.readInt());
+                    Map<String, String> recipient = Character.getCharacterFromDatabase(p.readString());
+                    String message = p.readString();
+                    if (cItem == null || cItem.getItemId() / 10000 != 910 || message.length() > 73) {
+                        c.sendPacket(PacketCreator.showPackageGiftFailed((byte) 0));
+                        return;
+                    }
+                    if (!canBuy(chr, cItem, cs.getCash(CashShop.NX_PREPAID))) {
+                        c.sendPacket(PacketCreator.showPackageGiftFailed((byte) 0xA5));
+                        return;
+                    } else if (!checkBirthday(c, birthday)) {
+                        c.sendPacket(PacketCreator.showPackageGiftFailed((byte) 0xC4));
+                        return;
+                    } else if (recipient == null) {
+                        c.sendPacket(PacketCreator.showPackageGiftFailed((byte) 0xA9));
+                        return;
+                    } else if (recipient.get("accountid").equals(String.valueOf(c.getAccID()))) {
+                        c.sendPacket(PacketCreator.showPackageGiftFailed((byte) 0xA8));
+                        return;
+                    }
+                    cs.gainCash(4, cItem, chr.getWorld());
+                    cs.gift(Integer.parseInt(recipient.get("id")), chr.getName(), message, cItem.getSN());
+                    c.sendPacket(PacketCreator.showPackageGiftSucceed(recipient.get("name"), cItem));
+                    c.sendPacket(PacketCreator.showCash(chr));
+
+                    String noteMessage = chr.getName() + " has sent you a gift! Go check out the Cash Shop.";
+                    noteService.sendNormal(noteMessage, chr.getName(), recipient.get("name"));
+                    Character receiver = c.getChannelServer().getPlayerStorage().getCharacterByName(recipient.get("name"));
+                    if (receiver != null) {
+                        noteService.show(receiver);
+                    }
                 } else {
                     log.warn("Unhandled action: {}, packet: {}", action, p);
                 }

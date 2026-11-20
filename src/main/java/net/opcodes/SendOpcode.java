@@ -208,8 +208,8 @@ public enum SendOpcode {
     REMOVE_SPECIAL_MAPOBJECT(0xB0),
     MOVE_SUMMON(0xB1),
     SUMMON_ATTACK(0xB2),
-    DAMAGE_SUMMON(0xB3),
-    SUMMON_SKILL(0xB4),
+    SUMMON_SKILL(0xB3),      // the client plays a summon's pose on 0xB3 and shows its damage on 0xB4
+    DAMAGE_SUMMON(0xB4),
     SPAWN_DRAGON(0xB5),
     MOVE_DRAGON(0xB6),
     REMOVE_DRAGON(0xB7),

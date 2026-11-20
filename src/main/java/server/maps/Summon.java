@@ -93,6 +93,17 @@ public class Summon extends AbstractAnimatedMapObject {
         return MapObjectType.SUMMON;
     }
 
+    /**
+     * What the client lets the summon do by itself: 0 nothing (the puppets), 2 the Beholder's Aura and Hex, 1 attack
+     * (every other summon).
+     */
+    public byte getAssistType() {
+        if (isPuppet()) {
+            return 0;
+        }
+        return (byte) (skill == 1321007 ? 2 : 1);
+    }
+
     public final boolean isPuppet() {
         switch (skill) {
             case 3111002:

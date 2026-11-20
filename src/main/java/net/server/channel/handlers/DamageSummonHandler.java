@@ -34,7 +34,7 @@ public final class DamageSummonHandler extends AbstractPacketHandler {
     @Override
     public final void handlePacket(InPacket p, Client c) {
         int oid = p.readInt();
-        p.skip(1);   // -1
+        byte attack = p.readByte();   // -1 a touch, else the attack's index
         int damage = p.readInt();
         int monsterIdFrom = p.readInt();
 
@@ -48,7 +48,7 @@ public final class DamageSummonHandler extends AbstractPacketHandler {
             if (summon.getHP() <= 0) {
                 player.cancelEffectFromBuffStat(BuffStat.PUPPET);
             }
-            player.getMap().broadcastMessage(player, PacketCreator.damageSummon(player.getId(), oid, damage, monsterIdFrom), summon.getPosition());
+            player.getMap().broadcastMessage(player, PacketCreator.damageSummon(player.getId(), oid, attack, damage, monsterIdFrom), summon.getPosition());
         }
     }
 }

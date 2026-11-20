@@ -36,10 +36,10 @@ public enum MonsterStatus {
     POISON(0x200),
     SEAL(0x400),
     SHOWDOWN(0x800),
-    WEAPON_ATTACK_UP(0x1000),
-    WEAPON_DEFENSE_UP(0x2000),
-    MAGIC_ATTACK_UP(0x4000),
-    MAGIC_DEFENSE_UP(0x8000),
+    WEAPON_ATTACK_UP(0x1000),   // the client: % on the physical damage it deals
+    MAGIC_ATTACK_UP(0x2000),    // % on the magic damage it deals
+    WEAPON_DEFENSE_UP(0x4000),  // % on the physical damage it takes
+    MAGIC_DEFENSE_UP(0x8000),   // % on the magic damage it takes
     DOOM(0x10000),
     SHADOW_WEB(0x20000),
     WEAPON_IMMUNITY(0x40000),
