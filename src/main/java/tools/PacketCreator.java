@@ -79,6 +79,7 @@ import net.server.world.Party;
 import net.server.world.PartyCharacter;
 import net.server.world.PartyOperation;
 import net.server.world.World;
+import server.AdminShop;
 import server.CashShop;
 import server.CashShop.CashItem;
 import server.CashShop.CashItemFactory;
@@ -5756,6 +5757,34 @@ public class PacketCreator {
     }
 
     /** The answer to the MTS Charge button. */
+    /**
+     * An NPC's shop window: the NPC, its rows (each its number, the item, the price (above 0 the player buys, else the
+     * NPC buys for that much), greyed, the most at once) and whether leaving asks what else is wanted. No rows: the NPC
+     * says it isn't doing business.
+     */
+    public static Packet adminShop(int npcId, List<AdminShop.Entry> rows, boolean wish) {
+        final OutPacket p = OutPacket.create(SendOpcode.ADMIN_SHOP);
+        p.writeInt(npcId);
+        p.writeShort(rows.size());
+        for (AdminShop.Entry e : rows) {
+            p.writeInt(e.sn());
+            p.writeInt(e.itemId());
+            p.writeInt(e.price());
+            p.writeByte(e.off() ? 1 : 0);
+            p.writeShort(e.max());
+        }
+        p.writeByte(wish ? 1 : 0);
+        return p;
+    }
+
+    /** How a trade at an NPC's shop went (AdminShop's codes). */
+    public static Packet adminShopResult(byte code) {
+        final OutPacket p = OutPacket.create(SendOpcode.ADMIN_SHOP_MESSAGE);
+        p.writeByte(4);
+        p.writeByte(code);
+        return p;
+    }
+
     public static Packet MTSChargeResult() {
         return OutPacket.create(SendOpcode.MTS_CHARGE_RESULT);
     }

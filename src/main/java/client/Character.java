@@ -266,6 +266,7 @@ public class Character extends AbstractCharacterObject {
     private final Pet[] pets = new Pet[3];
     private PlayerShop playerShop = null;
     private Shop shop = null;
+    private server.AdminShop.Visit adminShop = null;
     private SkinColor skinColor = SkinColor.LIGHT;
     private Storage storage = null;
     private Trade trade = null;
@@ -5558,6 +5559,16 @@ public class Character extends AbstractCharacterObject {
 
     public void closeNpcShop() {
         setShop(null);
+        adminShop = null;
+    }
+
+    /** The NPC's shop (AdminShop) the player is at, or was at last on this map. */
+    public server.AdminShop.Visit getAdminShop() {
+        return adminShop;
+    }
+
+    public void setAdminShop(server.AdminShop.Visit visit) {
+        adminShop = visit;
     }
 
     public void closeTrade() {

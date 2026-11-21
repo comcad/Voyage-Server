@@ -26,6 +26,7 @@ import net.opcodes.RecvOpcode;
 import net.server.channel.handlers.AcceptFamilyHandler;
 import net.server.channel.handlers.AdminChatHandler;
 import net.server.channel.handlers.AdminCommandHandler;
+import net.server.channel.handlers.AdminShopHandler;
 import net.server.channel.handlers.AdminLogHandler;
 import net.server.channel.handlers.AllianceOperationHandler;
 import net.server.channel.handlers.AranComboHandler;
@@ -314,6 +315,7 @@ public final class PacketProcessor {
         registerHandler(RecvOpcode.QUEST_ACTION, new QuestActionHandler());
         registerHandler(RecvOpcode.GRENADE_EFFECT, new GrenadeEffectHandler());
         registerHandler(RecvOpcode.NPC_SHOP, new NPCShopHandler());
+        registerHandler(RecvOpcode.ADMIN_SHOP, new AdminShopHandler());
         registerHandler(RecvOpcode.ITEM_SORT, new InventoryMergeHandler());
         registerHandler(RecvOpcode.ITEM_MOVE, new ItemMoveHandler());
         registerHandler(RecvOpcode.MESO_DROP, new MesoDropHandler());

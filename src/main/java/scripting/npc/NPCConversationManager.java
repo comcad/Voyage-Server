@@ -380,6 +380,16 @@ public class NPCConversationManager extends AbstractPlayerInteraction {
         getPlayer().resetStats();
     }
 
+    /** Opens the shop the customs folder gives this NPC (with none, it says it isn't doing business). */
+    public void openAdminShop() {
+        AdminShop.open(c, getNpc());
+    }
+
+    /** Opens the shop the customs folder gives NPC `npcId`. */
+    public void openAdminShop(int npcId) {
+        AdminShop.open(c, npcId);
+    }
+
     public void openShopNPC(int id) {
         Shop shop = ShopFactory.getInstance().getShop(id);
 

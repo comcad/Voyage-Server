@@ -27,6 +27,7 @@ import config.YamlConfig;
 import constants.id.NpcId;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
+import server.AdminShop;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scripting.npc.NPCScriptManager;
@@ -62,6 +63,12 @@ public final class NPCTalkHandler extends AbstractPacketHandler {
             } else {
                 if (c.getCM() != null || c.getQM() != null) {
                     c.sendPacket(PacketCreator.enableActions());
+                    return;
+                }
+
+                // a shop the customs folder gives the NPC opens, unless that folder has a script of its own for it
+                if (AdminShop.of(npc.getId()) != null && !AdminShop.hasOwnScript(npc.getId())) {
+                    AdminShop.open(c, npc.getId());
                     return;
                 }
 
