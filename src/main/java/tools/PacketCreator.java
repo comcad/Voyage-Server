@@ -5329,6 +5329,13 @@ public class PacketCreator {
         return p;
     }
 
+    /** The owner took the merchant's mesos (no fields): the window's meso count goes to 0. */
+    public static Packet hiredMerchantMesoTaken() {
+        final OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
+        p.writeByte(PlayerInteractionHandler.Action.MERCHANT_MESO_TAKEN.getCode());
+        return p;
+    }
+
     public static Packet hiredMerchantMaintenanceMessage() {
         OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
         p.writeByte(PlayerInteractionHandler.Action.ROOM.getCode());

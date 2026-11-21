@@ -92,6 +92,7 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
         CLOSE_MERCHANT(0x29),
         REAL_CLOSE_MERCHANT(0x2A),
         MERCHANT_MESO(0x2B),
+        MERCHANT_MESO_TAKEN(0x2C),
         SOMETHING(0x2D),
         VIEW_VISITORS(0x2E),
         VIEW_BLACKLIST(0x2F),

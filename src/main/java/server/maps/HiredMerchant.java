@@ -234,6 +234,7 @@ public class HiredMerchant extends AbstractMapObject {
             synchronized (items) {
                 chr.withdrawMerchantMesos();
             }
+            chr.sendPacket(PacketCreator.hiredMerchantMesoTaken());
         }
     }
 
