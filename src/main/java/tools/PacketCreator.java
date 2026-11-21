@@ -4217,14 +4217,15 @@ public class PacketCreator {
     }
 
     // is there a way to spawn reactors non-animated?
+    /** A reactor appearing: its oid, id, state and place, whether it is mirrored (the map's f) and its name. */
     public static Packet spawnReactor(Reactor reactor) {
         OutPacket p = OutPacket.create(SendOpcode.REACTOR_SPAWN);
         p.writeInt(reactor.getObjectId());
         p.writeInt(reactor.getId());
         p.writeByte(reactor.getState());
         p.writePos(reactor.getPosition());
-        p.writeByte(0);
-        p.writeShort(0);
+        p.writeByte(reactor.getFacingDirection());
+        p.writeString(reactor.getName() == null ? "" : reactor.getName());
         return p;
     }
 
