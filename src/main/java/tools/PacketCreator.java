@@ -3221,7 +3221,7 @@ public class PacketCreator {
     public static Packet tradeInvite(Character chr) {
         final OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
         p.writeByte(PlayerInteractionHandler.Action.INVITE.getCode());
-        p.writeByte(3);
+        p.writeByte(chr.getTrade() != null && chr.getTrade().isCash() ? 6 : 3); // 6 a cash trade
         p.writeString(chr.getName());
         p.writeBytes(new byte[]{(byte) 0xB7, (byte) 0x50, 0, 0});
         return p;
@@ -3322,7 +3322,7 @@ public class PacketCreator {
     public static Packet getTradeStart(Client c, Trade trade, byte number) {
         final OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
         p.writeByte(PlayerInteractionHandler.Action.ROOM.getCode());
-        p.writeByte(3);
+        p.writeByte(trade.isCash() ? 6 : 3); // 6 a cash trade
         p.writeByte(2);
         p.writeByte(number);
         if (number == 1) {
@@ -3353,6 +3353,24 @@ public class PacketCreator {
      * @param operation
      * @return
      */
+    /**
+     * A cash trade's birthday step answered (0x0E, room type 6): action 0 for the one inviting (then the target, whom
+     * the client invites once ok), 4 for the one invited (then the invitation, which the client visits once ok); not ok
+     * asks for the birthday again.
+     */
+    public static Packet cashTradeBirthday(byte action, boolean ok, int value) {
+        OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
+        p.writeByte(PlayerInteractionHandler.Action.OPEN_CASH.getCode());
+        p.writeByte(action);
+        p.writeByte(6);
+        p.writeByte(ok ? 1 : 0);
+        p.writeInt(value);
+        if (action == 4) {
+            p.writeByte(0);
+        }
+        return p;
+    }
+
     public static Packet getTradeResult(byte number, byte operation) {
         OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
         p.writeByte(PlayerInteractionHandler.Action.EXIT.getCode());
@@ -5094,11 +5112,12 @@ public class PacketCreator {
         return p;
     }
 
-    public static Packet getTradeChat(Character chr, String chat, boolean owner) {
+    /** A trade room's chat line: the sender's seat (0 the room's owner, 1 the visitor), then "name : text". */
+    public static Packet getTradeChat(Character chr, String chat, int seat) {
         final OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
         p.writeByte(PlayerInteractionHandler.Action.CHAT.getCode());
         p.writeByte(PlayerInteractionHandler.Action.CHAT_THING.getCode());
-        p.writeByte(owner ? 0 : 1);
+        p.writeByte(seat);
         p.writeString(chr.getName() + " : " + chat);
         return p;
     }

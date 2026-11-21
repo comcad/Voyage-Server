@@ -57,6 +57,8 @@ public class Trade {
         SUCCESSFUL(7),
         UNSUCCESSFUL(8),
         UNSUCCESSFUL_UNIQUE_ITEM_LIMIT(9),
+        UNSUCCESSFUL_EXPIRED(10),       // a cash trade: an item in it ran out
+        UNSUCCESSFUL_CASH_CHECK(11),    // a cash trade: refused by a server check
         UNSUCCESSFUL_ANOTHER_MAP(12),
         UNSUCCESSFUL_DAMAGED_FILES(13);
 
@@ -80,6 +82,7 @@ public class Trade {
     private final Character chr;
     private final byte number;
     private boolean fullTrade = false;
+    private boolean cash = false;   // a cash trade (Cash Shop items, 5 a side)
 
     public Trade(byte number, Character chr) {
         this.chr = chr;
@@ -126,19 +129,10 @@ public class Trade {
         }
 
         if (exchangeMeso > 0) {
-            int fee = getFee(exchangeMeso);
-
-            chr.gainMeso(exchangeMeso - fee, show, true, show);
-            if (fee > 0) {
-                chr.dropMessage(1, "Transaction completed. You received " + GameConstants.numberWithCommas(exchangeMeso - fee) + " mesos due to trade fees.");
-            } else {
-                chr.dropMessage(1, "Transaction completed. You received " + GameConstants.numberWithCommas(exchangeMeso) + " mesos.");
-            }
-
-            result = TradeResult.NO_RESPONSE.getValue();
-        } else {
-            result = TradeResult.SUCCESSFUL.getValue();
+            chr.gainMeso(exchangeMeso - getFee(exchangeMeso), show, true, show);
         }
+        // a success either way: the client tells what came in after fees from its own mesos
+        result = TradeResult.SUCCESSFUL.getValue();
 
         exchangeMeso = 0;
         if (exchangeItems != null) {
@@ -214,9 +208,9 @@ public class Trade {
     }
 
     public void chat(String message) {
-        chr.sendPacket(PacketCreator.getTradeChat(chr, message, true));
+        chr.sendPacket(PacketCreator.getTradeChat(chr, message, number));
         if (partner != null) {
-            partner.getChr().sendPacket(PacketCreator.getTradeChat(chr, message, false));
+            partner.getChr().sendPacket(PacketCreator.getTradeChat(chr, message, number));
         }
     }
 
@@ -333,7 +327,14 @@ public class Trade {
                 return;
             }
 
-            if (local.getChr().getLevel() < 15) {
+            if (local.cash && (hasExpired(local.items) || hasExpired(partner.items))) {
+                cancelTrade(local.getChr(), TradeResult.UNSUCCESSFUL_EXPIRED);
+                return;
+            }
+
+            if (local.cash) {
+                // no daily meso limit in a cash trade (the client has none either)
+            } else if (local.getChr().getLevel() < 15) {
                 if (local.getChr().getMesosTraded() + local.exchangeMeso > 1000000) {
                     cancelTrade(local.getChr(), TradeResult.NO_RESPONSE);
                     local.getChr().sendPacket(PacketCreator.serverNotice(1, "Characters under level 15 may not trade more than 1 million mesos per day."));
@@ -430,9 +431,36 @@ public class Trade {
     }
 
     public static void startTrade(Character chr) {
+        startTrade(chr, false);
+    }
+
+    /** A trade room, or a cash trade's (Cash Shop items that may still be traded, 5 a side). */
+    public static void startTrade(Character chr, boolean cash) {
         if (chr.getTrade() == null) {
-            chr.setTrade(new Trade((byte) 0, chr));
+            Trade trade = new Trade((byte) 0, chr);
+            trade.cash = cash;
+            chr.setTrade(trade);
         }
+    }
+
+    public boolean isCash() {
+        return cash;
+    }
+
+    public byte getNumber() {
+        return number;
+    }
+
+    private static boolean hasExpired(List<Item> list) {
+        long now = System.currentTimeMillis();
+        synchronized (list) {
+            for (Item it : list) {
+                if (it.getExpiration() > 0 && it.getExpiration() < now) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean hasTradeInviteBack(Character c1, Character c2) {
@@ -478,6 +506,7 @@ public class Trade {
         if (InviteCoordinator.createInvite(InviteType.TRADE, c1, c1.getId(), c2.getId())) {
             if (c2.getTrade() == null) {
                 c2.setTrade(new Trade((byte) 1, c2));
+                c2.getTrade().cash = c1.getTrade().cash;
                 c2.getTrade().setPartner(c1.getTrade());
                 c1.getTrade().setPartner(c2.getTrade());
 

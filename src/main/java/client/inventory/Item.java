@@ -193,6 +193,9 @@ public class Item implements Comparable<Item> {
     }
 
     public boolean isUntradeable() {
-        return ((this.getFlag() & ItemConstants.UNTRADEABLE) == ItemConstants.UNTRADEABLE) || (ItemInformationProvider.getInstance().isDropRestricted(this.getItemId()) && !KarmaManipulator.hasKarmaFlag(this));
+        // the trade mark lifts a restriction, except on a Cash Shop item, where it only opens the cash trade
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        return ((this.getFlag() & ItemConstants.UNTRADEABLE) == ItemConstants.UNTRADEABLE)
+                || (ii.isDropRestricted(this.getItemId()) && !(KarmaManipulator.hasKarmaFlag(this) && !ii.isCash(this.getItemId())));
     }
 }

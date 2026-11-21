@@ -139,6 +139,51 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
         return 0;
     }
 
+    /** Characters who gave the right birthday for a cash trade, and when (the room or the visit must follow soon). */
+    private static final java.util.Map<Integer, Long> cashTradeBirthdays = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * A cash trade's birthday step (0x0E, room type 6). Action 0, inviting: the target alone at first (the client is
+     * asked for the birthday), then the birthday and the target; action 4, invited: the birthday and the invitation.
+     * The right birthday lets the client go on (it creates the room and invites, or visits); a wrong one asks again.
+     */
+    private static void cashTradeBirthday(Client c, Character chr, byte action, InPacket p) {
+        if (action == 0) {
+            if (chr.getTrade() != null) {
+                c.sendPacket(PacketCreator.enableActions());
+                return;
+            }
+            if (p.available() < 8) {
+                c.sendPacket(PacketCreator.cashTradeBirthday(action, false, p.readInt()));
+                return;
+            }
+            int birthday = p.readInt(), target = p.readInt();
+            boolean ok = CashOperationHandler.checkBirthday(c, birthday);
+            if (ok) {
+                cashTradeBirthdays.put(chr.getId(), System.currentTimeMillis());
+            }
+            c.sendPacket(PacketCreator.cashTradeBirthday(action, ok, target));
+        } else if (action == 4) {
+            int birthday = p.readInt(), sn = p.readInt();
+            Trade trade = chr.getTrade();
+            if (trade == null || !trade.isCash() || trade.isFullTrade()) {
+                c.sendPacket(PacketCreator.getMiniRoomError(1)); // the room is already closed
+                return;
+            }
+            boolean ok = CashOperationHandler.checkBirthday(c, birthday);
+            if (ok) {
+                cashTradeBirthdays.put(chr.getId(), System.currentTimeMillis());
+            }
+            c.sendPacket(PacketCreator.cashTradeBirthday(action, ok, sn));
+        }
+    }
+
+    /** Whether this character gave the right birthday for a cash trade in the last minute (used up here). */
+    private static boolean cashTradeCleared(Character chr) {
+        Long at = cashTradeBirthdays.remove(chr.getId());
+        return at != null && System.currentTimeMillis() - at < 60000;
+    }
+
     @Override
     public final void handlePacket(InPacket p, Client c) {
         if (!c.tryacquireClient()) {    // thanks GabrielSin for pointing dupes within player interactions
@@ -159,6 +204,10 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                 byte createType = p.readByte();
                 if (createType == 3) {  // trade
                     Trade.startTrade(chr);
+                } else if (createType == 6) {  // a cash trade, once its birthday was given
+                    if (cashTradeCleared(chr)) {
+                        Trade.startTrade(chr, true);
+                    }
                 } else if (createType == 1) { // omok mini game
                     int status = establishMiniroomStatus(chr, true);
                     if (status > 0) {
@@ -276,7 +325,7 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
             } else if (mode == Action.INVITE.getCode()) {
                 int otherCid = p.readInt();
                 Character other = chr.getMap().getCharacterById(otherCid);
-                if (other == null || chr.getId() == other.getId()) {
+                if (other == null || chr.getId() == other.getId() || chr.getTrade() == null) {
                     return;
                 }
 
@@ -285,6 +334,9 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                 Trade.declineTrade(chr);
             } else if (mode == Action.VISIT.getCode()) {
                 if (chr.getTrade() != null && chr.getTrade().getPartner() != null) {
+                    if (chr.getTrade().isCash() && !chr.getTrade().isFullTrade() && !cashTradeCleared(chr)) {
+                        return; // a cash trade is joined only after the birthday step
+                    }
                     if (!chr.getTrade().isFullTrade() && !chr.getTrade().getPartner().isFullTrade()) {
                         Trade.visitTrade(chr, chr.getTrade().getPartner().getChr());
                     } else {
@@ -352,6 +404,15 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                     chr.closeHiredMerchant(true);
                 }
             } else if (mode == Action.OPEN_STORE.getCode() || mode == Action.OPEN_CASH.getCode()) {
+                byte cashAction = 0, cashType = 0;
+                if (mode == Action.OPEN_CASH.getCode()) {
+                    cashAction = p.readByte();
+                    cashType = p.readByte();
+                    if (cashType == 6) {
+                        cashTradeBirthday(c, chr, cashAction, p);
+                        return;
+                    }
+                }
                 if (isTradeOpen(chr)) {
                     return;
                 }
@@ -359,7 +420,6 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                 if (mode == Action.OPEN_STORE.getCode()) {
                     p.readByte();    //01
                 } else {
-                    p.readShort();
                     int birthday = p.readInt();
                     if (!CashOperationHandler.checkBirthday(c, birthday)) { // birthday check here found thanks to lucasziron
                         c.sendPacket(PacketCreator.serverNotice(1, "Please check again the birthday date."));
@@ -516,7 +576,8 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                 short quantity = p.readShort();
                 byte targetSlot = p.readByte();
 
-                if (targetSlot < 1 || targetSlot > 9) {
+                boolean cashTrade = chr.getTrade() != null && chr.getTrade().isCash();
+                if (targetSlot < 1 || targetSlot > (cashTrade ? 5 : 9)) {
                     log.warn("[Hack] Chr {} Trying to dupe on trade slot.", chr.getName());
                     c.sendPacket(PacketCreator.enableActions());
                     return;
@@ -528,7 +589,15 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                     return;
                 }
 
-                if (ii.isUnmerchable(item.getItemId())) {
+                if (cashTrade) {
+                    // a cash trade takes only Cash Shop items that may still be traded: not sealed, and no pets
+                    if (!ii.isCash(item.getItemId()) || item.getCashId() == 0 || ItemConstants.isPet(item.getItemId())
+                            || !KarmaManipulator.hasKarmaFlag(item) || (item.getFlag() & ItemConstants.LOCK) != 0) {
+                        c.sendPacket(PacketCreator.serverNotice(1, "That item is untradeable."));
+                        c.sendPacket(PacketCreator.enableActions());
+                        return;
+                    }
+                } else if (ii.isUnmerchable(item.getItemId())) {
                     if (ItemConstants.isPet(item.getItemId())) {
                         c.sendPacket(PacketCreator.serverNotice(1, "Pets are not allowed to be traded."));
                     } else {
@@ -589,6 +658,8 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                         }
                     }
                 }
+            } else if (mode == Action.TRANSACTION.getCode()) {
+                // the partner's items as the client saw them (ids and checksums), sent when the partner confirms: not checked
             } else if (mode == Action.CONFIRM.getCode()) {
                 Trade.completeTrade(chr);
             } else if (mode == Action.ADD_ITEM.getCode() || mode == Action.PUT_ITEM.getCode()) {

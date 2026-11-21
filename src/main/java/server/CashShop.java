@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package server;
 
+import client.inventory.manipulator.KarmaManipulator;
 import client.inventory.Equip;
 import client.inventory.InventoryType;
 import client.inventory.Item;
@@ -199,6 +200,11 @@ public class CashShop {
                 } else {
                     item.setExpiration(Server.getInstance().getCurrentTime() + DAYS.toMillis(period));
                 }
+            }
+
+            // a Cash Shop item may be traded once, in a cash trade (pets aside, and anything shared across the account)
+            if (petid == -1 && !ItemInformationProvider.getInstance().isAccountRestricted(itemId)) {
+                KarmaManipulator.setKarmaFlag(item);
             }
 
             item.setSN(sn);
