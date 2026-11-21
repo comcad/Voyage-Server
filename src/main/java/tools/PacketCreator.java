@@ -5505,17 +5505,7 @@ public class PacketCreator {
         p.writeByte(1);
         p.writeByte(1);
         for (MTSItemInfo item : items) {
-            addItemInfo(p, item.getItem(), true);
-            p.writeInt(item.getID()); //id
-            p.writeInt(item.getPrice()); // the seller's price
-            p.writeInt(item.getTaxes()); // the fee the buyer pays on top
-            p.writeInt(0);
-            p.writeLong(getTime(item.getEndingDate()));
-            p.writeString(item.getSeller()); //account name (what was nexon thinking?)
-            p.writeString(item.getSeller()); //char name
-            for (int j = 0; j < 28; j++) {
-                p.writeByte(0);
-            }
+            addMTSItem(p, item);
         }
         p.writeByte(1);
         return p;
@@ -5667,6 +5657,43 @@ public class PacketCreator {
         return p;
     }
 
+    /**
+     * An MTS listing: the item, its id, the price and the fee buyers pay on top, two strings the client keeps but
+     * doesn't show, the end, the owner's name (its own-listing checks) and the name in the Seller column, a comment,
+     * an auction's bid count, bid increment and highest bid, an unused int, the buy-now price, another unused int,
+     * and the MY PAGE status.
+     */
+    private static void addMTSItem(OutPacket p, MTSItemInfo item) {
+        addItemInfo(p, item.getItem(), true);
+        p.writeInt(item.getID());
+        p.writeInt(item.getPrice());
+        p.writeInt(item.getTaxes());
+        p.writeShort(0);
+        p.writeShort(0);
+        p.writeLong(getTime(item.getEndingDate()));
+        p.writeString(item.getSeller());
+        p.writeString(item.getSeller());
+        p.writeString(item.getComment());
+        p.writeInt(item.getBids());
+        p.writeInt(item.getStep());
+        p.writeInt(item.getBid());
+        p.writeInt(0);
+        p.writeInt(item.getBuyNow());
+        p.writeInt(0);
+        p.writeShort(item.getStatus());
+    }
+
+    /** A wanted request's Buy List: the items offered to it. */
+    public static Packet MTSBuyList(List<MTSItemInfo> items) {
+        final OutPacket p = OutPacket.create(SendOpcode.MTS_OPERATION);
+        p.writeByte(0x2D);
+        p.writeInt(items.size());
+        for (MTSItemInfo item : items) {
+            addMTSItem(p, item);
+        }
+        return p;
+    }
+
     public static Packet MTSConfirmSell() {
         final OutPacket p = OutPacket.create(SendOpcode.MTS_OPERATION);
         p.writeByte(0x1D);
@@ -5720,17 +5747,7 @@ public class PacketCreator {
         p.writeInt(items.size());
         if (!items.isEmpty()) {
             for (MTSItemInfo item : items) {
-                addItemInfo(p, item.getItem(), true);
-                p.writeInt(item.getID()); //id
-                p.writeInt(item.getPrice()); // the seller's price
-                p.writeInt(item.getTaxes()); // the fee the buyer pays on top
-                p.writeInt(0);
-                p.writeLong(getTime(item.getEndingDate()));
-                p.writeString(item.getSeller()); //account name (what was nexon thinking?)
-                p.writeString(item.getSeller()); //char name
-                for (int i = 0; i < 28; i++) {
-                    p.writeByte(0);
-                }
+                addMTSItem(p, item);
             }
         }
         return p;
@@ -5742,17 +5759,7 @@ public class PacketCreator {
         p.writeInt(items.size());
         if (!items.isEmpty()) {
             for (MTSItemInfo item : items) {
-                addItemInfo(p, item.getItem(), true);
-                p.writeInt(item.getID()); //id
-                p.writeInt(item.getPrice()); // the seller's price
-                p.writeInt(item.getTaxes()); // the fee the buyer pays on top
-                p.writeInt(0);
-                p.writeLong(getTime(item.getEndingDate()));
-                p.writeString(item.getSeller()); //account name (what was nexon thinking?)
-                p.writeString(item.getSeller()); //char name
-                for (int i = 0; i < 28; i++) {
-                    p.writeByte(0);
-                }
+                addMTSItem(p, item);
             }
         }
         p.writeInt(0); // items not shown
@@ -7300,8 +7307,8 @@ public class PacketCreator {
         p.writeString(c.getAccountName());
         if (mts) {
             p.writeInt(5000); // the listing fee, in mesos
-            p.writeInt(10); // buyers pay the price plus this percent
-            p.writeInt(100); // and this many NX more
+            p.writeInt(MTSItemInfo.FEE_PERCENT); // buyers pay the price plus this percent
+            p.writeInt(MTSItemInfo.FEE_FLAT); // and this many NX more
             p.writeInt(24); // the shortest auction, in hours
             p.writeInt(168); // the longest
             p.writeLong(getTime(System.currentTimeMillis()));

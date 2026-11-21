@@ -48,6 +48,7 @@ import net.server.coordinator.session.SessionCoordinator;
 import net.server.guild.Alliance;
 import net.server.guild.Guild;
 import net.server.guild.GuildCharacter;
+import net.server.channel.handlers.MTSHandler;
 import net.server.task.BossLogTask;
 import net.server.task.CharacterDiseaseTask;
 import net.server.task.CouponTask;
@@ -997,6 +998,7 @@ public class Server {
         tMan.register(new CharacterDiseaseTask(), YamlConfig.config.server.UPDATE_INTERVAL, YamlConfig.config.server.UPDATE_INTERVAL);
         tMan.register(new CouponTask(), YamlConfig.config.server.COUPON_INTERVAL, timeLeft);
         tMan.register(new RankingCommandTask(), MINUTES.toMillis(5), MINUTES.toMillis(5));
+        tMan.register(MTSHandler::settle, MINUTES.toMillis(1), MINUTES.toMillis(1)); // auctions and wanted requests whose time is up
         tMan.register(new RankingLoginTask(), YamlConfig.config.server.RANKING_INTERVAL, timeLeft);
         tMan.register(new LoginCoordinatorTask(), HOURS.toMillis(1), timeLeft);
         tMan.register(new EventRecallCoordinatorTask(), HOURS.toMillis(1), timeLeft);
