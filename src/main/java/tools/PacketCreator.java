@@ -1843,19 +1843,17 @@ public class PacketCreator {
         p.writeShort(0); //v83
         p.writeByte(0xFC);
         p.writeByte(1);
-        if (chr.getBuffedValue(BuffStat.MORPH) != null) {
-            p.writeInt(2);
-        } else {
-            p.writeInt(0);
-        }
+        Integer morph = chr.getBuffedValue(BuffStat.MORPH), ghost = chr.getBuffedValue(BuffStat.GHOST_MORPH);
+        // the second mask's low half: Morph (0x2) and Ghost (0x20000)
+        p.writeInt((morph != null ? 2 : 0) | (ghost != null ? 0x20000 : 0));
         long buffmask = 0;
-        Integer buffvalue = null;
+        Integer combo = null;
         if ((chr.getBuffedValue(BuffStat.DARKSIGHT) != null || chr.getBuffedValue(BuffStat.WIND_WALK) != null) && !chr.isHidden()) {
             buffmask |= BuffStat.DARKSIGHT.getValue();
         }
         if (chr.getBuffedValue(BuffStat.COMBO) != null) {
             buffmask |= BuffStat.COMBO.getValue();
-            buffvalue = Integer.valueOf(chr.getBuffedValue(BuffStat.COMBO));
+            combo = chr.getBuffedValue(BuffStat.COMBO);
         }
         if (chr.getBuffedValue(BuffStat.SHADOWPARTNER) != null) {
             buffmask |= BuffStat.SHADOWPARTNER.getValue();
@@ -1863,16 +1861,16 @@ public class PacketCreator {
         if (chr.getBuffedValue(BuffStat.SOULARROW) != null) {
             buffmask |= BuffStat.SOULARROW.getValue();
         }
-        if (chr.getBuffedValue(BuffStat.MORPH) != null) {
-            buffvalue = Integer.valueOf(chr.getBuffedValue(BuffStat.MORPH));
-        }
         p.writeInt((int) ((buffmask >> 32) & 0xffffffffL));
-        if (buffvalue != null) {
-            if (chr.getBuffedValue(BuffStat.MORPH) != null) { //TEST
-                p.writeShort(buffvalue);
-            } else {
-                p.writeByte(buffvalue.byteValue());
-            }
+        // the values, in the order the client reads them: Combo's (a byte), then Morph's and Ghost's (shorts)
+        if (combo != null) {
+            p.writeByte(combo.byteValue());
+        }
+        if (morph != null) {
+            p.writeShort(morph);
+        }
+        if (ghost != null) {
+            p.writeShort(ghost);
         }
         p.writeInt((int) (buffmask & 0xffffffffL));
 

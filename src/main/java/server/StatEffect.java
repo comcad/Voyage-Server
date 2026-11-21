@@ -1374,6 +1374,10 @@ public class StatEffect implements Cloneable {
             } else if (isMorph()) {
                 List<Pair<BuffStat, Integer>> stat = Collections.singletonList(new Pair<>(BuffStat.MORPH, getMorph(applyto)));
                 mbuff = PacketCreator.giveForeignBuff(applyto.getId(), stat);
+            } else if (ghost > 0) {
+                // a ghost (the spaceship's 2): those around draw it too
+                List<Pair<BuffStat, Integer>> stat = Collections.singletonList(new Pair<>(BuffStat.GHOST_MORPH, ghost));
+                mbuff = PacketCreator.giveForeignBuff(applyto.getId(), stat);
             } else if (isAriantShield()) {
                 List<Pair<BuffStat, Integer>> stat = Collections.singletonList(new Pair<>(BuffStat.AURA, 1));
                 mbuff = PacketCreator.giveForeignBuff(applyto.getId(), stat);
