@@ -81,6 +81,8 @@ import net.server.channel.handlers.ItemPickupHandler;
 import net.server.channel.handlers.ItemRewardHandler;
 import net.server.channel.handlers.KeymapChangeHandler;
 import net.server.channel.handlers.LeftKnockbackHandler;
+import net.server.channel.handlers.MTSChargeHandler;
+import net.server.channel.handlers.MTSCheckCashHandler;
 import net.server.channel.handlers.MTSHandler;
 import net.server.channel.handlers.MagicDamageHandler;
 import net.server.channel.handlers.MakerSkillHandler;
@@ -382,6 +384,8 @@ public final class PacketProcessor {
         registerHandler(RecvOpcode.CLOSE_CHALKBOARD, new CloseChalkboardHandler());
         registerHandler(RecvOpcode.USE_MOUNT_FOOD, new UseMountFoodHandler());
         registerHandler(RecvOpcode.MTS_OPERATION, new MTSHandler());
+        registerHandler(RecvOpcode.MTS_CHARGE, new MTSChargeHandler());
+        registerHandler(RecvOpcode.MTS_CHECK_CASH, new MTSCheckCashHandler());
         registerHandler(RecvOpcode.RING_ACTION, new RingActionHandler(channelDeps.noteService()));
         registerHandler(RecvOpcode.SPOUSE_CHAT, new SpouseChatHandler());
         registerHandler(RecvOpcode.PET_AUTO_POT, new PetAutoPotHandler());

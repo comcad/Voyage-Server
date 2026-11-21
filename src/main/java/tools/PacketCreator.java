@@ -5507,8 +5507,8 @@ public class PacketCreator {
         for (MTSItemInfo item : items) {
             addItemInfo(p, item.getItem(), true);
             p.writeInt(item.getID()); //id
-            p.writeInt(item.getTaxes()); //this + below = price
-            p.writeInt(item.getPrice()); //price
+            p.writeInt(item.getPrice()); // the seller's price
+            p.writeInt(item.getTaxes()); // the fee the buyer pays on top
             p.writeInt(0);
             p.writeLong(getTime(item.getEndingDate()));
             p.writeString(item.getSeller()); //account name (what was nexon thinking?)
@@ -5686,12 +5686,32 @@ public class PacketCreator {
         return p;
     }
 
-    public static Packet MTSConfirmTransfer(int quantity, int pos) {
+    public static Packet MTSConfirmTransfer(int invType, int pos) {
         final OutPacket p = OutPacket.create(SendOpcode.MTS_OPERATION);
         p.writeByte(0x27);
-        p.writeInt(quantity);
+        p.writeInt(invType);
         p.writeInt(pos);
         return p;
+    }
+
+    /** An MTS result with no fields (a success or failure notice). */
+    public static Packet MTSResult(int mode) {
+        final OutPacket p = OutPacket.create(SendOpcode.MTS_OPERATION);
+        p.writeByte(mode);
+        return p;
+    }
+
+    /** An MTS result with a reason code (0x43 not enough mesos, 0x47 inventory full, 0x4F may not be sold...). */
+    public static Packet MTSResult(int mode, int code) {
+        final OutPacket p = OutPacket.create(SendOpcode.MTS_OPERATION);
+        p.writeByte(mode);
+        p.writeByte(code);
+        return p;
+    }
+
+    /** The answer to the MTS Charge button. */
+    public static Packet MTSChargeResult() {
+        return OutPacket.create(SendOpcode.MTS_CHARGE_RESULT);
     }
 
     public static Packet notYetSoldInv(List<MTSItemInfo> items) {
@@ -5702,8 +5722,8 @@ public class PacketCreator {
             for (MTSItemInfo item : items) {
                 addItemInfo(p, item.getItem(), true);
                 p.writeInt(item.getID()); //id
-                p.writeInt(item.getTaxes()); //this + below = price
-                p.writeInt(item.getPrice()); //price
+                p.writeInt(item.getPrice()); // the seller's price
+                p.writeInt(item.getTaxes()); // the fee the buyer pays on top
                 p.writeInt(0);
                 p.writeLong(getTime(item.getEndingDate()));
                 p.writeString(item.getSeller()); //account name (what was nexon thinking?)
@@ -5712,8 +5732,6 @@ public class PacketCreator {
                     p.writeByte(0);
                 }
             }
-        } else {
-            p.writeInt(0);
         }
         return p;
     }
@@ -5726,8 +5744,8 @@ public class PacketCreator {
             for (MTSItemInfo item : items) {
                 addItemInfo(p, item.getItem(), true);
                 p.writeInt(item.getID()); //id
-                p.writeInt(item.getTaxes()); //taxes
-                p.writeInt(item.getPrice()); //price
+                p.writeInt(item.getPrice()); // the seller's price
+                p.writeInt(item.getTaxes()); // the fee the buyer pays on top
                 p.writeInt(0);
                 p.writeLong(getTime(item.getEndingDate()));
                 p.writeString(item.getSeller()); //account name (what was nexon thinking?)
@@ -5737,8 +5755,8 @@ public class PacketCreator {
                 }
             }
         }
-        p.writeByte(0xD0 + items.size());
-        p.writeBytes(new byte[]{-1, -1, -1, 0});
+        p.writeInt(0); // items not shown
+        p.writeByte(1);
         return p;
     }
 
@@ -7281,13 +7299,12 @@ public class PacketCreator {
 
         p.writeString(c.getAccountName());
         if (mts) {
-            p.writeBytes(new byte[]{(byte) 0x88, 19, 0, 0,
-                    7, 0, 0, 0,
-                    (byte) 0xF4, 1, 0, 0,
-                    (byte) 0x18, 0, 0, 0,
-                    (byte) 0xA8, 0, 0, 0,
-                    (byte) 0x70, (byte) 0xAA, (byte) 0xA7, (byte) 0xC5,
-                    (byte) 0x4E, (byte) 0xC1, (byte) 0xCA, 1});
+            p.writeInt(5000); // the listing fee, in mesos
+            p.writeInt(10); // buyers pay the price plus this percent
+            p.writeInt(100); // and this many NX more
+            p.writeInt(24); // the shortest auction, in hours
+            p.writeInt(168); // the longest
+            p.writeLong(getTime(System.currentTimeMillis()));
         } else {
             p.writeInt(0);
             List<SpecialCashItem> lsci = CashItemFactory.getSpecialCashItems();

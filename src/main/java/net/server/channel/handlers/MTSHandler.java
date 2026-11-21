@@ -32,6 +32,7 @@ import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import net.packet.Packet;
 import net.server.Server;
+import net.server.world.World;
 import net.server.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,6 +107,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                     quantity = 1;
                 }
                 if (quantity < 0 || price < 110 || c.getPlayer().getItemQuantity(itemid, false) < quantity) {
+                    c.sendPacket(PacketCreator.MTSResult(0x1E, 0x4F)); // this item may not be sold
                     return;
                 }
                 InventoryType invType = ItemConstants.getInventoryType(itemid);
@@ -197,17 +199,21 @@ public final class MTSHandler extends AbstractPacketHandler {
                     c.enableCSActions();
                     c.sendPacket(PacketCreator.transferInventory(getTransfer(c.getPlayer().getId())));
                     c.sendPacket(PacketCreator.notYetSoldInv(getNotYetSold(c.getPlayer().getId())));
+                } else {
+                    c.sendPacket(PacketCreator.MTSResult(0x1E, i == null ? 0x4F : 0x43)); // may not be sold / not enough mesos
                 }
                 break;
             }
-            case 3: //send offer for wanted item
+            case 3: //send offer for wanted item (no wanted list yet): requesting the item for sale failed
+                c.sendPacket(PacketCreator.MTSResult(0x20, 0));
                 break;
-            case 4: //list wanted item
+            case 4: //list wanted item (no wanted list yet): registering under [Buy] failed
                 p.readInt();
                 p.readInt();
                 p.readInt();
                 p.readShort();
                 p.readString();
+                c.sendPacket(PacketCreator.MTSResult(0x38));
                 break;
             case 5: { //change page
                 int tab = p.readInt();
@@ -268,6 +274,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                         c.getPlayer().getCurrentPage()));
                 c.sendPacket(PacketCreator.notYetSoldInv(getNotYetSold(c.getPlayer().getId())));
                 c.sendPacket(PacketCreator.transferInventory(getTransfer(c.getPlayer().getId())));
+                c.sendPacket(PacketCreator.MTSResult(0x25)); // successfully canceled the sale
                 break;
             }
             case 8: { // transfer item from transfer inv.
@@ -319,6 +326,10 @@ public final class MTSHandler extends AbstractPacketHandler {
                                                 .getNextFreeSlot());
                                 i = equip.copy();
                             }
+                            if (!InventoryManipulator.checkSpace(c, i.getItemId(), i.getQuantity(), i.getOwner())) {
+                                c.sendPacket(PacketCreator.MTSResult(0x28, 0x47)); // your inventory is full
+                                return;
+                            }
                             try (PreparedStatement pse = con.prepareStatement(
                                     "DELETE FROM mts_items WHERE id = ? AND seller = ? AND transfer = 1")) {
                                 pse.setInt(1, id);
@@ -330,8 +341,10 @@ public final class MTSHandler extends AbstractPacketHandler {
                             c.sendPacket(getCart(c.getPlayer().getId()));
                             c.sendPacket(getMTS(c.getPlayer().getCurrentTab(), c.getPlayer().getCurrentType(),
                                     c.getPlayer().getCurrentPage()));
-                            c.sendPacket(PacketCreator.MTSConfirmTransfer(i.getQuantity(), i.getPosition()));
+                            c.sendPacket(PacketCreator.MTSConfirmTransfer(i.getInventoryType().getType(), i.getPosition()));
                             c.sendPacket(PacketCreator.transferInventory(getTransfer(c.getPlayer().getId())));
+                        } else {
+                            c.sendPacket(PacketCreator.MTSResult(0x28, 0));
                         }
                     }
                 } catch (SQLException e) {
@@ -341,6 +354,7 @@ public final class MTSHandler extends AbstractPacketHandler {
             }
             case 9: { //add to cart
                 int id = p.readInt(); // id of the item
+                boolean placed = false;
                 try (Connection con = DatabaseConnection.getConnection()) {
                     try (PreparedStatement ps1 = con.prepareStatement("SELECT id FROM mts_items WHERE id = ? AND seller <> ?")) {
                         ps1.setInt(1, id); // Dummy query, prevents adding to cart self owned items
@@ -356,6 +370,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                                             pse.setInt(1, c.getPlayer().getId());
                                             pse.setInt(2, id);
                                             pse.executeUpdate();
+                                            placed = true;
                                         }
                                     }
                                 }
@@ -370,6 +385,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                 c.sendPacket(PacketCreator.enableActions());
                 c.sendPacket(PacketCreator.transferInventory(getTransfer(c.getPlayer().getId())));
                 c.sendPacket(PacketCreator.notYetSoldInv(getNotYetSold(c.getPlayer().getId())));
+                c.sendPacket(PacketCreator.MTSResult(placed ? 0x29 : 0x2A)); // placed in your Cart / failed
                 break;
             }
             case 10: { //delete from cart
@@ -387,13 +403,26 @@ public final class MTSHandler extends AbstractPacketHandler {
                 c.enableCSActions();
                 c.sendPacket(PacketCreator.transferInventory(getTransfer(c.getPlayer().getId())));
                 c.sendPacket(PacketCreator.notYetSoldInv(getNotYetSold(c.getPlayer().getId())));
+                c.sendPacket(PacketCreator.MTSResult(0x2B)); // deleted from the Cart
                 break;
             }
-            case 12: //put item up for auction
+            case 11: //the wanted list's buy list (no wanted list yet): failed to load the Buy List
+                c.sendPacket(PacketCreator.MTSResult(0x2E));
                 break;
-            case 13: //cancel wanted cart thing
+            case 12: //buy from the wanted list's buy list: failed to purchase the item
+                c.sendPacket(PacketCreator.MTSResult(0x36));
                 break;
-            case 14: //buy auction item now
+            case 13: //cancel a purchase request: failed to cancel the request for purchase
+                c.sendPacket(PacketCreator.MTSResult(0x32));
+                break;
+            case 14: //not sent by the client
+                break;
+            case 18: //put an item up for auction (no auctions yet)
+            case 19: //bid (no auctions yet)
+                c.sendPacket(PacketCreator.MTSResult(0x18, 0));
+                break;
+            case 20: //buy an auction item now (no auctions yet): failed to purchase the item
+                c.sendPacket(PacketCreator.MTSResult(0x36));
                 break;
             case 16: { //buy
                 int id = p.readInt(); // id of the item
@@ -404,27 +433,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                     if (rs.next()) {
                         int price = rs.getInt("price") + 100 + (int) (rs.getInt("price") * 0.1); // taxes
                         if (c.getPlayer().getCashShop().getCash(CashShop.NX_PREPAID) >= price) { // FIX
-                            boolean alwaysnull = true;
-                            for (Channel cserv : Server.getInstance().getAllChannels()) {
-                                Character victim = cserv.getPlayerStorage().getCharacterById(rs.getInt("seller"));
-                                if (victim != null) {
-                                    victim.getCashShop().gainCash(4, rs.getInt("price"));
-                                    alwaysnull = false;
-                                }
-                            }
-                            if (alwaysnull) {
-                                try (PreparedStatement pse = con.prepareStatement("SELECT accountid FROM characters WHERE id = ?")) {
-                                    pse.setInt(1, rs.getInt("seller"));
-                                    ResultSet rse = pse.executeQuery();
-                                    if (rse.next()) {
-                                        try (PreparedStatement psee = con.prepareStatement("UPDATE accounts SET nxPrepaid = nxPrepaid + ? WHERE id = ?")) {
-                                            psee.setInt(1, rs.getInt("price"));
-                                            psee.setInt(2, rse.getInt("accountid"));
-                                            psee.executeUpdate();
-                                        }
-                                    }
-                                }
-                            }
+                            creditSeller(con, rs.getInt("seller"), rs.getInt("price"));
                             try (PreparedStatement pse = con.prepareStatement("UPDATE mts_items SET seller = ?, transfer = 1 WHERE id = ?")) {
                                 pse.setInt(1, c.getPlayer().getId());
                                 pse.setInt(2, id);
@@ -461,24 +470,7 @@ public final class MTSHandler extends AbstractPacketHandler {
                     if (rs.next()) {
                         int price = rs.getInt("price") + 100 + (int) (rs.getInt("price") * 0.1);
                         if (c.getPlayer().getCashShop().getCash(CashShop.NX_PREPAID) >= price) {
-                            for (Channel cserv : Server.getInstance().getAllChannels()) {
-                                Character victim = cserv.getPlayerStorage().getCharacterById(rs.getInt("seller"));
-                                if (victim != null) {
-                                    victim.getCashShop().gainCash(CashShop.NX_PREPAID, rs.getInt("price"));
-                                } else {
-                                    try (PreparedStatement pse = con.prepareStatement("SELECT accountid FROM characters WHERE id = ?")) {
-                                        pse.setInt(1, rs.getInt("seller"));
-                                        ResultSet rse = pse.executeQuery();
-                                        if (rse.next()) {
-                                            try (PreparedStatement psee = con.prepareStatement("UPDATE accounts SET nxPrepaid = nxPrepaid + ? WHERE id = ?")) {
-                                                psee.setInt(1, rs.getInt("price"));
-                                                psee.setInt(2, rse.getInt("accountid"));
-                                                psee.executeUpdate();
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                            creditSeller(con, rs.getInt("seller"), rs.getInt("price"));
                             try (PreparedStatement pse = con.prepareStatement("UPDATE mts_items SET seller = ?, transfer = 1 WHERE id = ?")) {
                                 pse.setInt(1, c.getPlayer().getId());
                                 pse.setInt(2, id);
@@ -511,6 +503,25 @@ public final class MTSHandler extends AbstractPacketHandler {
             }
         } else {
             c.sendPacket(PacketCreator.showMTSCash(c.getPlayer()));
+        }
+    }
+
+    /**
+     * The seller's NX for a sale: onto the character when it's online anywhere (a channel, the Cash Shop or the MTS),
+     * where its own save would otherwise write the old balance back; else onto its account.
+     */
+    private static void creditSeller(Connection con, int sellerId, int amount) throws SQLException {
+        for (World w : Server.getInstance().getWorlds()) {
+            Character seller = w.getPlayerStorage().getCharacterById(sellerId);
+            if (seller != null) {
+                seller.getCashShop().gainCash(CashShop.NX_PREPAID, amount);
+                return;
+            }
+        }
+        try (PreparedStatement ps = con.prepareStatement("UPDATE accounts SET nxPrepaid = nxPrepaid + ? WHERE id = (SELECT accountid FROM characters WHERE id = ?)")) {
+            ps.setInt(1, amount);
+            ps.setInt(2, sellerId);
+            ps.executeUpdate();
         }
     }
 
