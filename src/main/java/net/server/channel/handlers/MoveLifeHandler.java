@@ -105,7 +105,9 @@ public final class MoveLifeHandler extends AbstractMovementPacketHandler {
                     }
                 }
             }
-        } else {
+        } else if (isAttack) {
+            // only an attack is checked against the monster's attacks: any other act (a hit's, which the client sends
+            // when the monster is struck) goes on to the other players as it came, so their games play it
             int castPos = (rawActivity - 24) / 2;
             int atkStatus = monster.canUseAttack(castPos, isSkill);
             if (atkStatus < 1) {
