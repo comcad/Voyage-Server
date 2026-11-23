@@ -135,7 +135,11 @@ public final class SpecialMoveHandler extends AbstractPacketHandler {
         if (chr.isAlive()) {
             if (skill.getId() != Priest.MYSTIC_DOOR) {
                 if (skill.getId() % 10000000 != 1005) {
-                    skill.getEffect(skillLevel).applyTo(chr, pos);
+                    StatEffect used = skill.getEffect(skillLevel);
+                    // the others see an instant skill's cast too (Teleport...); a buff's is shown as it's applied
+                    if (used.applyTo(chr, pos) && !used.showsOwnCast() && skillid != SuperGM.HEAL_PLUS_DISPEL) {
+                        chr.getMap().broadcastMessage(chr, PacketCreator.showBuffEffect(chr.getId(), skillid, 1, (byte) 3), false);
+                    }
                 } else {
                     skill.getEffect(skillLevel).applyEchoOfHero(chr);
                 }

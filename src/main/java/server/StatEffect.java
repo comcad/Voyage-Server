@@ -928,6 +928,11 @@ public class StatEffect implements Cloneable {
     }
 
     // primary: the player caster of the buff
+    /** Whether applying it shows its cast to the other players itself: a buff's, a summon's, a Cygnus final attack's. */
+    public boolean showsOwnCast() {
+        return overTime || isCygnusFA() || getSummonMovementType() != null;
+    }
+
     private boolean applyTo(Character applyfrom, Character applyto, boolean primary, Point pos, boolean useMaxRange, int affectedPlayers) {
         if (skill && (sourceid == GM.HIDE || sourceid == SuperGM.HIDE)) {
             applyto.toggleHide(false);
