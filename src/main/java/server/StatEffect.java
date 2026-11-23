@@ -133,6 +133,7 @@ public class StatEffect implements Cloneable {
     private short mhpRRate, mmpRRate, mobSkill, mobSkillLevel;
     private byte mhpR, mmpR;
     private short mpCon, hpCon;
+    private int mastery;
     private int duration, target, barrier, mob;
     private boolean overTime, repeatEffect;
     private int sourceid;
@@ -244,6 +245,7 @@ public class StatEffect implements Cloneable {
         ret.mp = (short) DataTool.getInt("mp", source, 0);
         ret.mpR = DataTool.getInt("mpR", source, 0) / 100.0;
         ret.mpCon = (short) DataTool.getInt("mpCon", source, 0);
+        ret.mastery = DataTool.getInt("mastery", source, 0);
         ret.hpCon = (short) DataTool.getInt("hpCon", source, 0);
         int iprop = DataTool.getInt("prop", source, 100);
         ret.prop = iprop / 100.0;
@@ -1877,6 +1879,11 @@ public class StatEffect implements Cloneable {
 
     public short getHpCon() {
         return hpCon;
+    }
+
+    /** A mastery skill's mastery (its level's "mastery"). */
+    public int getMastery() {
+        return mastery;
     }
 
     public short getMpCon() {

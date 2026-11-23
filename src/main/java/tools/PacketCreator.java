@@ -2338,7 +2338,7 @@ public class PacketCreator {
                                           int direction, int display) {
         final OutPacket p = OutPacket.create(SendOpcode.CLOSE_RANGE_ATTACK);
         addAttackBody(p, chr, skill, skilllevel, stance, numAttackedAndDamage, 0, targets, speed, direction,
-                display);
+                display, chr.getWeaponMastery(false));
         return p;
     }
 
@@ -2347,7 +2347,7 @@ public class PacketCreator {
                                       int display) {
         final OutPacket p = OutPacket.create(SendOpcode.RANGED_ATTACK);
         addAttackBody(p, chr, skill, skilllevel, stance, numAttackedAndDamage, projectile, targets, speed, direction,
-                display);
+                display, chr.getWeaponMastery(true));
         p.writeInt(0);
         return p;
     }
@@ -2357,7 +2357,7 @@ public class PacketCreator {
                                      int display) {
         final OutPacket p = OutPacket.create(SendOpcode.MAGIC_ATTACK);
         addAttackBody(p, chr, skill, skilllevel, stance, numAttackedAndDamage, 0, targets, speed, direction,
-                display);
+                display, chr.getWeaponMastery(false));
         if (charge != -1) {
             p.writeInt(charge);
         }
@@ -2366,7 +2366,7 @@ public class PacketCreator {
 
     private static void addAttackBody(OutPacket p, Character chr, int skill, int skilllevel, int stance,
                                       int numAttackedAndDamage, int projectile, Map<Integer, AttackTarget> targets,
-                                      int speed, int direction, int display) {
+                                      int speed, int direction, int display, int mastery) {
         p.writeInt(chr.getId());
         p.writeByte(numAttackedAndDamage);
         p.writeByte(chr.getLevel());   // the attacker's level: the client picks a skill's CharLevel art by it
@@ -2378,7 +2378,7 @@ public class PacketCreator {
         p.writeByte(direction);
         p.writeByte(stance);
         p.writeByte(speed);
-        p.writeByte(0x0A);
+        p.writeByte(mastery);   // the weapon's mastery: those watching pick the swing trail by it
         p.writeInt(projectile);
         for (Map.Entry<Integer, AttackTarget> target : targets.entrySet()) {
             AttackTarget value = target.getValue();

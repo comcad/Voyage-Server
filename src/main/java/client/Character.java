@@ -5839,6 +5839,59 @@ public class Character extends AbstractCharacterObject {
         return Collections.unmodifiableMap(skills);
     }
 
+    /**
+     * The mastery of the weapon you hold, as the client works it out for an attack: the weapon type's mastery skill
+     * (a spear's and a polearm's with Beholder's, an Aran's polearm High Mastery's once learnt, a bow's and a
+     * crossbow's expert skill's once learnt). Those watching pick your swing trail by it (Character/Afterimage).
+     */
+    public int getWeaponMastery(boolean ranged) {
+        Item weapon = getInventory(InventoryType.EQUIPPED).getItem((short) -11);
+        if (weapon == null) {
+            return 0;
+        }
+        int jobId = getJob().getId();
+        boolean cygnus = jobId / 1000 == 1;
+        switch ((weapon.getItemId() / 10000) % 100) {
+            case 30, 40 -> {
+                if (ranged) return 0;
+                int m = masteryOf(1100000);
+                if (m == 0) m = masteryOf(1200000);
+                return m != 0 ? m : masteryOf(11100000);
+            }
+            case 31, 41 -> { return ranged ? 0 : masteryOf(1100001); }
+            case 32, 42 -> { return ranged ? 0 : masteryOf(1200001); }
+            case 33 -> { return ranged ? 0 : masteryOf(4200000); }
+            case 43 -> { return ranged ? 0 : masteryOf(1300000) + masteryOf(1321007); }
+            case 44 -> {
+                if (ranged) return 0;
+                if (jobId / 100 == 21 || jobId == 2000) {
+                    int high = masteryOf(21120001);
+                    return high != 0 ? high : masteryOf(21100000);
+                }
+                return masteryOf(1300001) + masteryOf(1321007);
+            }
+            case 45 -> {
+                if (!ranged) return 0;
+                int expert = masteryOf(cygnus ? 13110003 : 3120005);
+                return expert != 0 ? expert : masteryOf(cygnus ? 13100000 : 3100000);
+            }
+            case 46 -> {
+                if (!ranged) return 0;
+                int expert = masteryOf(3220004);
+                return expert != 0 ? expert : masteryOf(3200000);
+            }
+            case 47 -> { return ranged ? masteryOf(cygnus ? 14100000 : 4100000) : 0; }
+            case 48 -> { return ranged ? 0 : masteryOf(cygnus ? 15100001 : 5100001); }
+            case 49 -> { return ranged ? masteryOf(5200000) : 0; }
+            default -> { return 0; }
+        }
+    }
+
+    private int masteryOf(int skillId) {
+        int level = getSkillLevel(skillId);
+        return level > 0 ? SkillFactory.getSkill(skillId).getEffect(level).getMastery() : 0;
+    }
+
     public int getSkillLevel(int skill) {
         SkillEntry ret = skills.get(SkillFactory.getSkill(skill));
         if (ret == null) {
