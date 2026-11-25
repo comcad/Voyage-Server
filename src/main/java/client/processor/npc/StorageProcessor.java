@@ -62,6 +62,7 @@ public class StorageProcessor {
 
         if (c.tryacquireClient()) {
             try {
+                // (one reply per request: the client's storage window waits for it, and a second one is an error to it)
                 switch (mode) {
                 case 4: { // Take out
                     byte type = p.readByte();
@@ -73,17 +74,25 @@ public class StorageProcessor {
                         return;
                     }
 
-                    slot = storage.getSlot(InventoryType.getByType(type), slot);
-                    Item item = storage.getItem(slot);
-
                     if (hasGMRestrictions(chr)) {
                         chr.dropMessage(1, gmBlockedStorageMessage);
                         log.info(String.format("GM %s blocked from using storage", chr.getName()));
-                        chr.sendPacket(PacketCreator.enableActions());
+                        c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
                         return;
                     }
 
-                    if (item != null) {
+                    InventoryType takeOutType = InventoryType.getByType(type);
+                    try {
+                        slot = takeOutType == null ? -1 : storage.getSlot(takeOutType, slot);
+                    } catch (IndexOutOfBoundsException | NullPointerException e) {
+                        slot = -1;
+                    }
+                    Item item = slot < 0 ? null : storage.getItem(slot);
+
+                    if (item == null) {
+                        c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
+                        return;
+                    } else {
                         if (ii.isPickupRestricted(item.getItemId()) && chr.haveItemWithId(item.getItemId(), true)) {
                             c.sendPacket(PacketCreator.getStorageError((byte) 0x0C));
                             return;
@@ -93,12 +102,11 @@ public class StorageProcessor {
                         if (chr.getMeso() < takeoutFee) {
                             c.sendPacket(PacketCreator.getStorageError((byte) 0x0B));
                             return;
-                        } else {
-                            chr.gainMeso(-takeoutFee, false);
                         }
 
                         if (InventoryManipulator.checkSpace(c, item.getItemId(), item.getQuantity(), item.getOwner())) {
                             if (storage.takeOut(item)) {
+                                chr.gainMeso(-takeoutFee, false); // charged only once the item actually leaves storage
                                 chr.setUsedStorage();
 
                                 KarmaManipulator.toggleKarmaFlagToUntradeable(item);
@@ -109,7 +117,7 @@ public class StorageProcessor {
 
                                 storage.sendTakenOut(c, item.getInventoryType());
                             } else {
-                                c.sendPacket(PacketCreator.enableActions());
+                                c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
                                 return;
                             }
                         } else {
@@ -135,12 +143,12 @@ public class StorageProcessor {
                     if (hasGMRestrictions(chr)) {
                         chr.dropMessage(1, gmBlockedStorageMessage);
                         log.info(String.format("GM %s blocked from using storage", chr.getName()));
-                        chr.sendPacket(PacketCreator.enableActions());
+                        c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
                         return;
                     }
 
                     if (quantity < 1) {
-                        c.sendPacket(PacketCreator.enableActions());
+                        c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
                         return;
                     }
                     if (storage.isFull()) {
@@ -159,7 +167,7 @@ public class StorageProcessor {
                             if (item != null && item.getItemId() == itemId
                                     && (item.getQuantity() >= quantity || ItemConstants.isRechargeable(itemId))) {
                                 if (ItemId.isWeddingRing(itemId) || ItemId.isWeddingToken(itemId)) {
-                                    c.sendPacket(PacketCreator.enableActions());
+                                    c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
                                     return;
                                 }
 
@@ -169,7 +177,7 @@ public class StorageProcessor {
 
                                 InventoryManipulator.removeFromSlot(c, invType, slot, quantity, false);
                             } else {
-                                c.sendPacket(PacketCreator.enableActions());
+                                c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
                                 return;
                             }
 
@@ -195,6 +203,8 @@ public class StorageProcessor {
                 case 6: // Arrange items
                     if (YamlConfig.config.server.USE_STORAGE_ITEM_SORT) {
                         storage.arrangeItems(c);
+                    } else {
+                        c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
                     }
                     c.sendPacket(PacketCreator.enableActions());
                     break;
@@ -206,7 +216,7 @@ public class StorageProcessor {
                     if (hasGMRestrictions(chr)) {
                         chr.dropMessage(1, gmBlockedStorageMessage);
                         log.info(String.format("GM %s blocked from using storage", chr.getName()));
-                        chr.sendPacket(PacketCreator.enableActions());
+                        c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
                         return;
                     }
 
@@ -214,13 +224,13 @@ public class StorageProcessor {
                         if (meso < 0 && (storageMesos - meso) < 0) {
                             meso = Integer.MIN_VALUE + storageMesos;
                             if (meso < playerMesos) {
-                                c.sendPacket(PacketCreator.enableActions());
+                                c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
                                 return;
                             }
                         } else if (meso > 0 && (playerMesos + meso) < 0) {
                             meso = Integer.MAX_VALUE - playerMesos;
                             if (meso > storageMesos) {
-                                c.sendPacket(PacketCreator.enableActions());
+                                c.sendPacket(PacketCreator.getStorageError((byte) 0x12));
                                 return;
                             }
                         }
@@ -230,7 +240,7 @@ public class StorageProcessor {
                         log.debug("Chr {} {} {} mesos", c.getPlayer().getName(), meso > 0 ? "took out" : "stored", Math.abs(meso));
                         storage.sendMeso(c);
                     } else {
-                        c.sendPacket(PacketCreator.enableActions());
+                        c.sendPacket(PacketCreator.getStorageError(meso == 0 ? (byte) 0x12 : (byte) 0x0B));
                         return;
                     }
                     break;

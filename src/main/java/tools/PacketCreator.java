@@ -2412,9 +2412,6 @@ public class PacketCreator {
     }
 
     // someone thought it was a good idea to handle floating point representation through packets ROFL
-    private static int doubleToShortBits(double d) {
-        return (int) (Double.doubleToLongBits(d) >> 48);
-    }
 
     public static Packet getNPCShop(Client c, int sid, List<ShopItem> items) {
         ItemInformationProvider ii = ItemInformationProvider.getInstance();
@@ -2427,13 +2424,12 @@ public class PacketCreator {
             p.writeInt(item.getPrice() == 0 ? item.getPitch() : 0); //Perfect Pitch
             p.writeInt(0); //Can be used x minutes after purchase
             p.writeInt(0); //Hmm
+            // as the client reads it: a bundle size, or a star's / bullet's unit price (a double); then the most per slot
             if (!ItemConstants.isRechargeable(item.getItemId())) {
                 p.writeShort(1); // stacksize o.o
-                p.writeShort(item.getBuyable());
+                p.writeShort(ii.getSlotMax(c, item.getItemId()));   // the item's own slot max (it was 1000 for all)
             } else {
-                p.writeShort(0);
-                p.writeInt(0);
-                p.writeShort(doubleToShortBits(ii.getUnitPrice(item.getItemId())));
+                p.writeLong(Double.doubleToLongBits(ii.getUnitPrice(item.getItemId())));   // the double, whole (it lost all but its top 16 bits)
                 p.writeShort(ii.getSlotMax(c, item.getItemId()));
             }
         }

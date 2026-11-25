@@ -83,14 +83,17 @@ public class Shop {
         c.sendPacket(PacketCreator.getNPCShop(c, getNpcId(), items));
     }
 
+    // (one reply per request: the client's shop window waits for it, and a second one is an error to it)
     public void buy(Client c, short slot, int itemId, short quantity) {
         ShopItem item = findBySlot(slot);
         if (item != null) {
             if (item.getItemId() != itemId) {
                 log.warn("Wrong slot number in shop {}", id);
+                c.sendPacket(PacketCreator.shopTransaction((byte) 6));
                 return;
             }
         } else {
+            c.sendPacket(PacketCreator.shopTransaction((byte) 6));
             return;
         }
         ItemInformationProvider ii = ItemInformationProvider.getInstance();
@@ -134,6 +137,8 @@ public class Shop {
                 } else {
                     c.sendPacket(PacketCreator.shopTransaction((byte) 3));
                 }
+            } else {
+                c.sendPacket(PacketCreator.shopTransaction((byte) 0x0D));
             }
 
         } else if (c.getPlayer().getInventory(InventoryType.CASH).countById(token) != 0) {
@@ -151,13 +156,15 @@ public class Shop {
                         InventoryManipulator.addById(c, itemId, quantity, "", -1, -1);
                     }
                     c.getPlayer().gainMeso(diff, false);
+                    c.sendPacket(PacketCreator.shopTransaction((byte) 0));
                 } else {
                     c.sendPacket(PacketCreator.shopTransaction((byte) 3));
                 }
-                c.sendPacket(PacketCreator.shopTransaction((byte) 0));
             } else {
                 c.sendPacket(PacketCreator.shopTransaction((byte) 2));
             }
+        } else {
+            c.sendPacket(PacketCreator.shopTransaction((byte) 6));
         }
     }
 
@@ -195,6 +202,7 @@ public class Shop {
         if (quantity == 0xFFFF || quantity == 0) {
             quantity = 1;
         } else if (quantity < 0) {
+            c.sendPacket(PacketCreator.shopTransaction((byte) 6));
             return;
         }
 
@@ -218,10 +226,12 @@ public class Shop {
         ItemInformationProvider ii = ItemInformationProvider.getInstance();
         Item item = c.getPlayer().getInventory(InventoryType.USE).getItem(slot);
         if (item == null || !ItemConstants.isRechargeable(item.getItemId())) {
+            c.sendPacket(PacketCreator.shopTransaction((byte) 6));
             return;
         }
         short slotMax = ii.getSlotMax(c, item.getItemId());
         if (item.getQuantity() < 0) {
+            c.sendPacket(PacketCreator.shopTransaction((byte) 6));
             return;
         }
         if (item.getQuantity() < slotMax) {
@@ -234,10 +244,15 @@ public class Shop {
             } else {
                 c.sendPacket(PacketCreator.shopTransaction((byte) 0x2));
             }
+        } else {
+            c.sendPacket(PacketCreator.shopTransaction((byte) 6)); // already full
         }
     }
 
     private ShopItem findBySlot(short slot) {
+        if (slot < 0 || slot >= items.size()) {
+            return null;
+        }
         return items.get(slot);
     }
 

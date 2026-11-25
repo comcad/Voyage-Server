@@ -28,6 +28,8 @@ import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import server.Shop;
+import tools.PacketCreator;
 
 /**
  * @author Matze
@@ -38,6 +40,12 @@ public final class NPCShopHandler extends AbstractPacketHandler {
     @Override
     public void handlePacket(InPacket p, Client c) {
         byte bmode = p.readByte();
+        // (one reply per request: the client's shop window waits for it, and a second one is an error to it)
+        Shop shop = c.getPlayer().getShop();
+        if (shop == null && bmode >= 0 && bmode <= 2) { // no shop open, so the client expects no CONFIRM
+            c.sendPacket(PacketCreator.enableActions());
+            return;
+        }
         switch (bmode) {
         case 0: { // mode 0 = buy :)
             short slot = p.readShort();// slot
@@ -50,20 +58,20 @@ public final class NPCShopHandler extends AbstractPacketHandler {
                 c.disconnect(true, false);
                 return;
             }
-            c.getPlayer().getShop().buy(c, slot, itemId, quantity);
+            shop.buy(c, slot, itemId, quantity);
             break;
         }
         case 1: { // sell ;)
             short slot = p.readShort();
             int itemId = p.readInt();
             short quantity = p.readShort();
-            c.getPlayer().getShop().sell(c, ItemConstants.getInventoryType(itemId), slot, quantity);
+            shop.sell(c, ItemConstants.getInventoryType(itemId), slot, quantity);
             break;
         }
         case 2: { // recharge ;)
 
             byte slot = (byte) p.readShort();
-            c.getPlayer().getShop().recharge(c, slot);
+            shop.recharge(c, slot);
             break;
         }
         case 3: // leaving :(
