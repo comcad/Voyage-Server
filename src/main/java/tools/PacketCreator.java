@@ -2848,6 +2848,75 @@ public class PacketCreator {
         };
     }
 
+    /** A two-state stat's common part in GIVE_BUFF: its value, its reason, its time (a byte and an int). */
+    private static void writeTwoState(OutPacket p, int value, int reason) {
+        p.writeInt(value);
+        p.writeInt(reason);
+        p.writeByte(0);
+        p.writeInt(0);
+    }
+
+    /**
+     * Energy Charge's bar (shown charged from 10000), as the client reads it: the mask, the two element bytes, its value,
+     * reason (the skill), time and term (seconds; 0 none), then the delay.
+     */
+    public static Packet giveEnergyCharge(int skillId, int bar) {
+        final OutPacket p = OutPacket.create(SendOpcode.GIVE_BUFF);
+        p.writeLong(BuffStat.ENERGY_CHARGE.getValue());
+        p.writeLong(0);
+        p.writeByte(0);
+        p.writeByte(0);
+        writeTwoState(p, bar, skillId);
+        p.writeShort(0);   // term
+        p.writeShort(0);   // delay
+        return p;
+    }
+
+    /** Homing Beacon / Bullseye on a monster (0: none), as the client reads it: value 1, the skill, its time, the monster. */
+    public static Packet giveHomingBeacon(int skillId, int mobOid) {
+        final OutPacket p = OutPacket.create(SendOpcode.GIVE_BUFF);
+        p.writeLong(BuffStat.HOMING_BEACON.getValue());
+        p.writeLong(0);
+        p.writeByte(0);
+        p.writeByte(0);
+        writeTwoState(p, 1, skillId);
+        p.writeInt(mobOid);
+        p.writeShort(0);   // delay
+        return p;
+    }
+
+    /**
+     * Riding, as the client reads it: any plain stats that come with it (the Battleship's), each its value, the skill as
+     * its reason and its time; the two element bytes; then riding's value (the vehicle's item) and reason (the skill)
+     * and its time; the delay; and a byte, riding changing how you move.
+     */
+    public static Packet giveRiding(int vehicleId, int skillId, List<Pair<BuffStat, Integer>> statups, int duration) {
+        final OutPacket p = OutPacket.create(SendOpcode.GIVE_BUFF);
+        List<Pair<BuffStat, Integer>> withRiding = new ArrayList<>(statups);
+        if (withRiding.stream().noneMatch(s -> s.getLeft() == BuffStat.MONSTER_RIDING)) {
+            withRiding.add(new Pair<>(BuffStat.MONSTER_RIDING, 0));
+        }
+        writeLongMask(p, withRiding);
+        List<Pair<BuffStat, Integer>> plain = new ArrayList<>();
+        for (Pair<BuffStat, Integer> s : withRiding) {
+            if (clientBuffBit(s.getLeft().getValue(), s.getLeft().isFirst()) < 82) {
+                plain.add(s);
+            }
+        }
+        plain.sort(Comparator.comparingInt(s -> BUFF_READ_RANK[clientBuffBit(s.getLeft().getValue(), s.getLeft().isFirst())]));
+        for (Pair<BuffStat, Integer> s : plain) {
+            p.writeShort(s.getRight().shortValue());
+            p.writeInt(skillId);
+            p.writeInt(duration);
+        }
+        p.writeByte(0);
+        p.writeByte(0);
+        writeTwoState(p, vehicleId, skillId);
+        p.writeShort(0);   // delay
+        p.writeByte(0);    // (riding changes how you move)
+        return p;
+    }
+
     public static Packet giveBuff(int buffid, int bufflength, List<Pair<BuffStat, Integer>> statups) {
         final OutPacket p = OutPacket.create(SendOpcode.GIVE_BUFF);
         if (statups.stream().noneMatch(s -> clientBuffBit(s.getLeft().getValue(), s.getLeft().isFirst()) >= 82)) {
@@ -2871,7 +2940,7 @@ public class PacketCreator {
             }
             return p;
         }
-        // riding, Homing Beacon, Energy Charge: as before, until they have writers in the client's two-state layout
+        // (riding, Homing Beacon and Energy Charge have their own writers: giveRiding, giveHomingBeacon, giveEnergyCharge)
         boolean special = false;
         writeLongMask(p, statups);
         for (Pair<BuffStat, Integer> statup : statups) {

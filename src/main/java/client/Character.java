@@ -4362,9 +4362,7 @@ public class Character extends AbstractCharacterObject {
         }
 
         if (this.isRidingBattleship()) {
-            List<Pair<BuffStat, Integer>> statups = new ArrayList<>(1);
-            statups.add(new Pair<>(BuffStat.MONSTER_RIDING, 0));
-            this.sendPacket(PacketCreator.giveBuff(ItemId.BATTLESHIP, 5221006, statups));
+            this.sendPacket(PacketCreator.giveRiding(ItemId.BATTLESHIP, Corsair.BATTLE_SHIP, Collections.emptyList(), 0));
             this.announceBattleshipHp();
         }
     }
@@ -6042,7 +6040,7 @@ public class Character extends AbstractCharacterObject {
             }
             List<Pair<BuffStat, Integer>> stat = Collections.singletonList(new Pair<>(BuffStat.ENERGY_CHARGE, energybar));
             setBuffedValue(BuffStat.ENERGY_CHARGE, energybar);
-            sendPacket(PacketCreator.giveBuff(energybar, 0, stat));
+            sendPacket(PacketCreator.giveEnergyCharge(energycharge.getId(), energybar));
             sendPacket(PacketCreator.showOwnBuffEffect(energycharge.getId(), 2));
             getMap().broadcastPacket(this, PacketCreator.showBuffEffect(id, energycharge.getId(), 2));
             getMap().broadcastPacket(this, PacketCreator.giveForeignPirateBuff(id, energycharge.getId(),
@@ -6057,7 +6055,7 @@ public class Character extends AbstractCharacterObject {
                     energybar = 0;
                     List<Pair<BuffStat, Integer>> stat = Collections.singletonList(new Pair<>(BuffStat.ENERGY_CHARGE, energybar));
                     setBuffedValue(BuffStat.ENERGY_CHARGE, energybar);
-                    sendPacket(PacketCreator.giveBuff(energybar, 0, stat));
+                    sendPacket(PacketCreator.giveEnergyCharge(energycharge.getId(), energybar));
                     getMap().broadcastPacket(chr, PacketCreator.cancelForeignFirstDebuff(id, ((long) 1) << 50));
                 }
             }, ceffect.getDuration());

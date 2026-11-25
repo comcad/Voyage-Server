@@ -47,8 +47,7 @@ public final class PlayerMapTransitionHandler extends AbstractPacketHandler {
         if (beaconid != -1) {
             chr.cancelBuffStats(BuffStat.HOMING_BEACON);
 
-            final List<Pair<BuffStat, Integer>> stat = Collections.singletonList(new Pair<>(BuffStat.HOMING_BEACON, 0));
-            chr.sendPacket(PacketCreator.giveBuff(1, beaconid, stat));
+            chr.sendPacket(PacketCreator.giveHomingBeacon(beaconid, 0));
         }
 
         if (!chr.isHidden()) {  // thanks Lame (Conrad) for noticing hidden characters controlling mobs

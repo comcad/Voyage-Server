@@ -1261,8 +1261,7 @@ public class StatEffect implements Cloneable {
     }
 
     public final void applyBeaconBuff(final Character applyto, int objectid) { // thanks Thora & Hyun for reporting an issue with homing beacon autoflagging mobs when changing maps
-        final List<Pair<BuffStat, Integer>> stat = Collections.singletonList(new Pair<>(BuffStat.HOMING_BEACON, objectid));
-        applyto.sendPacket(PacketCreator.giveBuff(1, sourceid, stat));
+        applyto.sendPacket(PacketCreator.giveHomingBeacon(sourceid, objectid));
 
         final long starttime = Server.getInstance().getCurrentTime();
         applyto.registerEffect(this, starttime, Long.MAX_VALUE, false);
@@ -1274,7 +1273,11 @@ public class StatEffect implements Cloneable {
 
         long leftDuration = (starttime + localDuration) - Server.getInstance().getCurrentTime();
         if (leftDuration > 0) {
-            if (isDash() || isInfusion()) {
+            if (isMonsterRiding()) {
+                Mount mount = target.getMount();
+                int vehicle = sourceid == Corsair.BATTLE_SHIP ? ItemId.BATTLESHIP : mount != null ? mount.getItemId() : 0;
+                target.sendPacket(PacketCreator.giveRiding(vehicle, sourceid, activeStats, (int) leftDuration));
+            } else if (isDash() || isInfusion()) {
                 // (the client reads a pirate buff's term in seconds)
                 target.sendPacket(PacketCreator.givePirateBuff(activeStats, (skill ? sourceid : -sourceid), (int) (leftDuration / 1000)));
             } else {
@@ -1370,7 +1373,8 @@ public class StatEffect implements Cloneable {
 
                     localstatups = statups;
                 }
-                buff = PacketCreator.giveBuff(localsourceid, localDuration, localstatups);
+                // the vehicle, the skill; the Battleship's own stats with the skill and their real time
+                buff = PacketCreator.giveRiding(localsourceid, sourceid, localstatups, duration);
                 mbuff = PacketCreator.showMonsterRiding(applyto.getId(), givemount);
                 localDuration = duration;
             } else if (isShadowPartner()) {
