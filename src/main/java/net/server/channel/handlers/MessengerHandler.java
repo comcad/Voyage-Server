@@ -67,10 +67,15 @@ public final class MessengerHandler extends AbstractPacketHandler {
                                             player.setMessenger(messenger);
                                             player.setMessengerPosition(position);
                                             world.joinMessenger(messenger.getId(), messengerplayer, player.getName(), messengerplayer.getChannel());
+                                        } else {
+                                            c.sendPacket(PacketCreator.joinMessenger(-1));   // the client waits for its place: -1 "unable to join"
                                         }
                                     } else {
                                         player.message("Could not verify your Maple Messenger accept since the invitation rescinded.");
+                                        c.sendPacket(PacketCreator.joinMessenger(-1));
                                     }
+                                } else {
+                                    c.sendPacket(PacketCreator.joinMessenger(-1));
                                 }
                             }
                         } else {
@@ -110,7 +115,9 @@ public final class MessengerHandler extends AbstractPacketHandler {
                         break;
                     case 0x05:
                         String targeted = p.readString();
-                        world.declineChat(targeted, player);
+                        p.readString();   // the decliner's own name
+                        byte auto = p.available() > 0 ? p.readByte() : 0;   // 1: declined by the Game Option / Blacklist
+                        world.declineChat(targeted, player, auto != 0 ? 1 : 0);
                         break;
                     case 0x06:
                         if (messenger != null) {

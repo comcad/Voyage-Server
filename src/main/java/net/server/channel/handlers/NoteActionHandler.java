@@ -60,9 +60,12 @@ public final class NoteActionHandler extends AbstractPacketHandler {
             p.readByte();
             p.readByte();
             int fame = 0;
-            for (int i = 0; i < num; i++) {
+            for (int i = 0; i < num && p.available() >= 5; i++) {
                 int id = p.readInt();
-                p.readByte(); //Fame, but we read it from the database :)
+                byte type = p.readByte(); //Fame, but we read it from the database :)
+                if (type == 3 && p.available() >= 4) {
+                    p.readInt();   // a wedding invitation's number, which the client sends after it
+                }
 
                 Optional<Note> discardedNote = noteService.delete(id);
                 if (discardedNote.isEmpty()) {

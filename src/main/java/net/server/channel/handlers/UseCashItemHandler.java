@@ -260,6 +260,7 @@ public final class UseCashItemHandler extends AbstractPacketHandler {
                         player.getClient().getChannelServer().broadcastPacket(PacketCreator.serverNotice(2, medal + player.getName() + " : " + p.readString()));
                     } else {
                         player.dropMessage(1, "You may not use this until you're level 10.");
+                        c.sendPacket(PacketCreator.enableActions());
                         return;
                     }
                     break;
@@ -298,6 +299,7 @@ public final class UseCashItemHandler extends AbstractPacketHandler {
 
                     if (!MapleTVEffect.broadcastMapleTVIfNotActive(player, victim, messages, tvType)) {
                         player.dropMessage(1, "MapleTV is already in use.");
+                        c.sendPacket(PacketCreator.enableActions());
                         return;
                     }
 
@@ -352,6 +354,8 @@ public final class UseCashItemHandler extends AbstractPacketHandler {
             if (sendSuccess) {
                 remove(c, position, itemId);
                 c.sendPacket(new SendNoteSuccessPacket());
+            } else {
+                c.sendPacket(PacketCreator.enableActions());
             }
         } else if (itemType == 510) {
             // PLAY_JUKEBOX, as the client reads it: the jukebox (its message and song) and who played it

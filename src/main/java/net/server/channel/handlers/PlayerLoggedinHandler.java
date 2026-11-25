@@ -355,7 +355,7 @@ public final class PlayerLoggedinHandler extends AbstractPacketHandler {
 
             CharacterNameAndId pendingBuddyRequest = c.getPlayer().getBuddylist().pollPendingRequest();
             if (pendingBuddyRequest != null) {
-                c.sendPacket(PacketCreator.requestBuddylistAdd(pendingBuddyRequest.getId(), c.getPlayer().getId(), pendingBuddyRequest.getName()));
+                c.sendPacket(PacketCreator.requestBuddylistAdd(pendingBuddyRequest.getId(), c.getPlayer().getId(), pendingBuddyRequest.getName(), c.getWorldServer().find(pendingBuddyRequest.getName())));
             }
 
             c.sendPacket(PacketCreator.updateGender(player));

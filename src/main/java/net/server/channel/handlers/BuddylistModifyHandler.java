@@ -58,7 +58,7 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
     private void nextPendingRequest(Client c) {
         CharacterNameAndId pendingBuddyRequest = c.getPlayer().getBuddylist().pollPendingRequest();
         if (pendingBuddyRequest != null) {
-            c.sendPacket(PacketCreator.requestBuddylistAdd(pendingBuddyRequest.getId(), c.getPlayer().getId(), pendingBuddyRequest.getName()));
+            c.sendPacket(PacketCreator.requestBuddylistAdd(pendingBuddyRequest.getId(), c.getPlayer().getId(), pendingBuddyRequest.getName(), c.getWorldServer().find(pendingBuddyRequest.getName())));
         }
     }
 
@@ -84,7 +84,9 @@ public class BuddylistModifyHandler extends AbstractPacketHandler {
         int mode = p.readByte();
         Character player = c.getPlayer();
         BuddyList buddylist = player.getBuddylist();
-        if (mode == 1) { // add
+        if (mode == 0) { // the client asks for its list again (its copy didn't add up)
+            c.sendPacket(PacketCreator.updateBuddylist(c.getPlayer().getBuddylist().getBuddies()));
+        } else if (mode == 1) { // add
             String addName = p.readString();
             String group = p.readString();
             if (group.length() > 16 || addName.length() < 4 || addName.length() > 13) {

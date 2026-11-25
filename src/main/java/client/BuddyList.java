@@ -174,7 +174,7 @@ public class BuddyList {
     public void addBuddyRequest(Client c, int cidFrom, String nameFrom, int channelFrom) {
         put(new BuddylistEntry(nameFrom, "Default Group", cidFrom, channelFrom, false));
         if (pendingRequests.isEmpty()) {
-            c.sendPacket(PacketCreator.requestBuddylistAdd(cidFrom, c.getPlayer().getId(), nameFrom));
+            c.sendPacket(PacketCreator.requestBuddylistAdd(cidFrom, c.getPlayer().getId(), nameFrom, c.getWorldServer().find(nameFrom)));
         } else {
             pendingRequests.push(new CharacterNameAndId(cidFrom, nameFrom));
         }

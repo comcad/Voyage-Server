@@ -1212,11 +1212,16 @@ public class World {
     }
 
     public void declineChat(String sender, Character player) {
+        declineChat(sender, player, 0);
+    }
+
+    /** mode: 0 "'%s' denied the request.", 1 "'%s' is currently not accepting chat." */
+    public void declineChat(String sender, Character player, int mode) {
         if (isConnected(sender)) {
             Character senderChr = getPlayerStorage().getCharacterByName(sender);
             if (senderChr != null && senderChr.getMessenger() != null) {
                 if (InviteCoordinator.answerInvite(InviteType.MESSENGER, player.getId(), senderChr.getMessenger().getId(), false).result == InviteResultType.DENIED) {
-                    senderChr.sendPacket(PacketCreator.messengerNote(player.getName(), 5, 0));
+                    senderChr.sendPacket(PacketCreator.messengerNote(player.getName(), 5, mode));
                 }
             }
         }

@@ -1285,10 +1285,15 @@ public class PacketCreator {
     private static Packet serverMessage(int type, int channel, String message, boolean servermessage, boolean megaEar, int npc) {
         OutPacket p = OutPacket.create(SendOpcode.SERVERMESSAGE);
         p.writeByte(type);
-        if (servermessage) {
-            p.writeByte(1);
+        if (servermessage || type == 4) {   // the ticker: a flag, then the text only when it's set, as the client reads it
+            boolean shown = message != null && !message.isEmpty();
+            p.writeByte(shown ? 1 : 0);
+            if (shown) {
+                p.writeString(message);
+            }
+        } else {
+            p.writeString(message);
         }
-        p.writeString(message);
         if (type == 3) {
             p.writeByte(channel - 1); // channel
             p.writeBool(megaEar);
@@ -4327,11 +4332,11 @@ public class PacketCreator {
         for (BuddylistEntry buddy : buddylist) {
             if (buddy.isVisible()) {
                 p.writeInt(buddy.getCharacterId()); // cid
-                p.writeFixedString(getRightPaddedStr(buddy.getName(), '\0', 13));
+                // the client's 39-byte record: id, name[13], a flag, the channel, group[17]
+                p.writeFixedString(fixedStr(buddy.getName(), 13));
                 p.writeByte(0); // opposite status
                 p.writeInt(buddy.getChannel() - 1);
-                p.writeFixedString(getRightPaddedStr(buddy.getGroup(), '\0', 13));
-                p.writeInt(0);//mapid?
+                p.writeFixedString(fixedStr(buddy.getGroup(), 17));   // (13 and an int: a longer group shifted the rest)
             }
         }
         for (int x = 0; x < shown; x++) {
@@ -4346,21 +4351,33 @@ public class PacketCreator {
         return p;
     }
 
-    public static Packet requestBuddylistAdd(int chrIdFrom, int chrId, String nameFrom) {
+    /**
+     * A buddy request: who it's from, then their 39-byte record as the list keeps it pending (id, name[13], flag 1, their
+     * channel, group[17]) and an in-shop byte, as the client reads it. channelFrom: 1-based, or -1 offline.
+     */
+    public static Packet requestBuddylistAdd(int chrIdFrom, int chrId, String nameFrom, int channelFrom) {
         OutPacket p = OutPacket.create(SendOpcode.BUDDYLIST);
         p.writeByte(9);
         p.writeInt(chrIdFrom);
         p.writeString(nameFrom);
         p.writeInt(chrIdFrom);
-        p.writeFixedString(getRightPaddedStr(nameFrom, '\0', 11));
-        p.writeByte(0x09);
-        p.writeByte(0xf0);
-        p.writeByte(0x01);
-        p.writeInt(0x0f);
-        p.writeFixedString("Default Group");
-        p.writeByte(0);
-        p.writeInt(chrId);
+        p.writeFixedString(fixedStr(nameFrom, 13));
+        p.writeByte(1);   // pending
+        p.writeInt(channelFrom > 0 ? channelFrom - 1 : -1);
+        p.writeFixedString(fixedStr("Default Group", 17));
+        p.writeByte(0);   // in the Cash Shop
         return p;
+    }
+
+    /** A fixed-width string field: cut to len - 1 (leaving its terminator) and padded with zeros. */
+    private static String fixedStr(String s, int len) {
+        if (s == null) {
+            s = "";
+        }
+        if (s.length() > len - 1) {
+            s = s.substring(0, len - 1);
+        }
+        return getRightPaddedStr(s, '\0', len);
     }
 
     public static Packet updateBuddyChannel(int characterid, int channel) {
