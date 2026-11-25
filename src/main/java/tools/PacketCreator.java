@@ -473,8 +473,9 @@ public class PacketCreator {
         p.writeShort(equip.getFlag()); //Item Flags
 
         if (isCash) {
+            // a cash item has no level-up type, item level, item EXP or hammer count: zeros, as the client reads them
             for (int i = 0; i < 10; i++) {
-                p.writeByte(0x40);
+                p.writeByte(0);
             }
         } else {
             int itemLevel = equip.getItemLevel();
@@ -556,7 +557,7 @@ public class PacketCreator {
             p.writeInt(skill.getKey().getId());
             p.writeInt(skill.getValue().skillevel);
             addExpirationTime(p, skill.getValue().expiration);
-            if (skill.getKey().isFourthJob()) {
+            if (hasMasterLevel(skill.getKey().getId())) {
                 p.writeInt(skill.getValue().masterlevel);
             }
         }
@@ -2105,17 +2106,29 @@ public class PacketCreator {
         return p;
     }
 
+    /**
+     * Whether the client reads a skill's master level after it (CharacterData's skill list): a job ending in 2 that isn't
+     * a first job, and of the Evan's only his 9th and 10th (2217, 2218).
+     */
+    private static boolean hasMasterLevel(int skillId) {
+        int job = skillId / 10000;
+        if (job / 100 == 22 || job == 2001) {
+            return job == 2217 || job == 2218;
+        }
+        return job % 100 != 0 && job % 10 == 2;
+    }
+
     private static void encodeNewYearCard(NewYearCardRecord newyear, OutPacket p) {
         p.writeInt(newyear.getId());
         p.writeInt(newyear.getSenderId());
         p.writeString(newyear.getSenderName());
         p.writeBool(newyear.isSenderCardDiscarded());
-        p.writeLong(newyear.getDateSent());
+        p.writeLong(newyear.getDateSent() != 0 ? getTime(newyear.getDateSent()) : 0);   // as a FILETIME, as the client reads it
         p.writeInt(newyear.getReceiverId());
         p.writeString(newyear.getReceiverName());
         p.writeBool(newyear.isReceiverCardDiscarded());
         p.writeBool(newyear.isReceiverCardReceived());
-        p.writeLong(newyear.getDateReceived());
+        p.writeLong(newyear.getDateReceived() != 0 ? getTime(newyear.getDateReceived()) : 0);
         p.writeString(newyear.getMessage());
     }
 
