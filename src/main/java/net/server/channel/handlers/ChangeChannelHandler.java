@@ -25,6 +25,7 @@ import client.Client;
 import client.autoban.AutobanFactory;
 import net.AbstractPacketHandler;
 import net.packet.InPacket;
+import tools.PacketCreator;
 import net.server.Server;
 
 /**
@@ -42,6 +43,7 @@ public final class ChangeChannelHandler extends AbstractPacketHandler {
             c.disconnect(false, false);
             return;
         } else if (c.getPlayer().getCashShop().isOpened() || c.getPlayer().getMiniGame() != null || c.getPlayer().getPlayerShop() != null) {
+            c.sendPacket(PacketCreator.blockedMessage2(1));   // the client waits on BLOCKED_SERVER / BLOCKED_MAP; STAT_CHANGED doesn't free it
             return;
         }
 

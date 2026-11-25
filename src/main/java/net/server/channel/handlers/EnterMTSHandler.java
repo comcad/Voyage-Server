@@ -50,30 +50,30 @@ public final class EnterMTSHandler extends AbstractPacketHandler {
         Character chr = c.getPlayer();
 
         if (!YamlConfig.config.server.USE_MTS) {
-            c.sendPacket(PacketCreator.enableActions());
+            c.sendPacket(PacketCreator.blockedMessage2(3));   // the client waits on BLOCKED_SERVER
             return;
         }
 
         if (chr.getEventInstance() != null) {
             c.sendPacket(PacketCreator.serverNotice(5, "Entering Cash Shop or MTS are disabled when registered on an event."));
-            c.sendPacket(PacketCreator.enableActions());
+            c.sendPacket(PacketCreator.blockedMessage2(3));   // the client waits on BLOCKED_SERVER
             return;
         }
 
         if (MiniDungeonInfo.isDungeonMap(chr.getMapId())) {
             c.sendPacket(PacketCreator.serverNotice(5, "Changing channels or entering Cash Shop or MTS are disabled when inside a Mini-Dungeon."));
-            c.sendPacket(PacketCreator.enableActions());
+            c.sendPacket(PacketCreator.blockedMessage2(3));   // the client waits on BLOCKED_SERVER
             return;
         }
 
         if (FieldLimit.CANNOTMIGRATE.check(chr.getMap().getFieldLimit())) {
             chr.dropMessage(1, "You can't do it here in this map.");
-            c.sendPacket(PacketCreator.enableActions());
+            c.sendPacket(PacketCreator.blockedMessage2(3));   // the client waits on BLOCKED_SERVER
             return;
         }
 
         if (!chr.isAlive()) {
-            c.sendPacket(PacketCreator.enableActions());
+            c.sendPacket(PacketCreator.blockedMessage2(3));   // the client waits on BLOCKED_SERVER
             return;
         }
         if (chr.getLevel() < 10) {

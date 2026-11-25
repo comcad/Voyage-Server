@@ -1482,19 +1482,20 @@ public class Client extends ChannelInboundHandlerAdapter {
             disconnect(false, false);
             return;
         }
+        // refused: BLOCKED_SERVER 1, "You cannot move that channel", which frees the client's transfer lock
         if (!player.isAlive() || FieldLimit.CANNOTMIGRATE.check(player.getMap().getFieldLimit())) {
-            sendPacket(PacketCreator.enableActions());
+            sendPacket(PacketCreator.blockedMessage2(1));
             return;
         } else if (MiniDungeonInfo.isDungeonMap(player.getMapId())) {
             sendPacket(PacketCreator.serverNotice(5, "Changing channels or entering Cash Shop or MTS are disabled when inside a Mini-Dungeon."));
-            sendPacket(PacketCreator.enableActions());
+            sendPacket(PacketCreator.blockedMessage2(1));
             return;
         }
 
         String[] socket = Server.getInstance().getInetSocket(this, getWorld(), channel);
         if (socket == null) {
             sendPacket(PacketCreator.serverNotice(1, "Channel " + channel + " is currently disabled. Try another channel."));
-            sendPacket(PacketCreator.enableActions());
+            sendPacket(PacketCreator.blockedMessage2(1));
             return;
         }
 
