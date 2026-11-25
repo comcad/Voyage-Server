@@ -420,11 +420,12 @@ public class StatEffect implements Cloneable {
                     }
 
                     if (DataTool.getInt("respectPimmune", source, 0) != 0) {
-                        addBuffStatPairToListIfNotZero(statups, BuffStat.RESPECT_PIMMUNE, 4);
+                        // the % chance to hit through a monster's immunity, which the client rolls: the card's prob
+                        addBuffStatPairToListIfNotZero(statups, BuffStat.RESPECT_PIMMUNE, DataTool.getInt("prob", source, 0));
                     }
 
                     if (DataTool.getInt("respectMimmune", source, 0) != 0) {
-                        addBuffStatPairToListIfNotZero(statups, BuffStat.RESPECT_MIMMUNE, 4);
+                        addBuffStatPairToListIfNotZero(statups, BuffStat.RESPECT_MIMMUNE, DataTool.getInt("prob", source, 0));
                     }
 
                     if (DataTool.getString("defenseAtt", source, null) != null) {

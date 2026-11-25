@@ -96,7 +96,7 @@ public enum BuffStat {
     MESOGUARD(0x1000000000000000L),
     EXP_INCREASE(0x2000000000000000L),
     WEAKEN(0x4000000000000000L),
-    MAP_PROTECTION(0x8000000000000000L),
+    MAP_PROTECTION(0x2000000000000000L),   // Thaw: client bit 29 (it was 31, Curse, a disease the client cures)
 
     //all incorrect buffstats
     SLOW(0x200000000L, true),
