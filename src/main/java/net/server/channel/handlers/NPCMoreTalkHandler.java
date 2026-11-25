@@ -61,13 +61,13 @@ public final class NPCMoreTalkHandler extends AbstractPacketHandler {
                     } else {
                         QuestScriptManager.getInstance().end(c, action, lastMsg, -1);
                     }
-                } else {
+                } else if (c.getCM() != null) {   // (no conversation open: nothing to answer)
                     c.getCM().setGetText(returnText);
                     NPCScriptManager.getInstance().action(c, action, lastMsg, -1);
                 }
             } else if (c.getQM() != null) {
                 c.getQM().dispose();
-            } else {
+            } else if (c.getCM() != null) {
                 c.getCM().dispose();
             }
         } else {

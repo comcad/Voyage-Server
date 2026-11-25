@@ -3600,8 +3600,7 @@ public class PacketCreator {
         p.writeString(talk);
         p.writeInt(def);
         p.writeInt(min);
-        p.writeInt(max);
-        p.writeInt(0);
+        p.writeInt(max);   // (the client reads nothing more)
         return p;
     }
 
@@ -3622,15 +3621,15 @@ public class PacketCreator {
         OutPacket p = OutPacket.create(SendOpcode.NPC_TALK);
         p.writeByte(nSpeakerTypeID);
         p.writeInt(nSpeakerTemplateID);
-        p.writeByte(0x6);
+        p.writeByte(0x5);   // the initial quiz is the client's type 5 (6 is the speed quiz)
         p.writeByte(0);
         p.writeByte(nResCode);
         if (nResCode == 0x0) {//fail has no bytes <3
             p.writeString(sTitle);
             p.writeString(sProblemText);
             p.writeString(sHintText);
-            p.writeShort(nMinInput);
-            p.writeShort(nMaxInput);
+            p.writeInt(nMinInput);   // ints, as the client reads them
+            p.writeInt(nMaxInput);
             p.writeInt(tRemainInitialQuiz);
         }
         return p;
@@ -3640,7 +3639,7 @@ public class PacketCreator {
         OutPacket p = OutPacket.create(SendOpcode.NPC_TALK);
         p.writeByte(nSpeakerTypeID);
         p.writeInt(nSpeakerTemplateID);
-        p.writeByte(0x7);
+        p.writeByte(0x6);   // the speed quiz is the client's type 6 (7 is the style picker)
         p.writeByte(0);
         p.writeByte(nResCode);
         if (nResCode == 0x0) {//fail has no bytes <3
