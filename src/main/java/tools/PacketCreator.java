@@ -2827,8 +2827,61 @@ public class PacketCreator {
      * @return
      */
     //1F 00 00 00 00 00 03 00 00 40 00 00 00 E0 00 00 00 00 00 00 00 00 E0 01 8E AA 4F 00 00 C2 EB 0B E0 01 8E AA 4F 00 00 C2 EB 0B 0C 00 8E AA 4F 00 00 C2 EB 0B 44 02 8E AA 4F 00 00 C2 EB 0B 44 02 8E AA 4F 00 00 C2 EB 0B 00 00 E0 7A 1D 00 8E AA 4F 00 00 00 00 00 00 00 00 03
+    /** A stat's bit in the client's 128-bit buff mask (first long: 64-127, second: 0-63; each long's high half the lower 32). */
+    private static int clientBuffBit(long value, boolean first) {
+        int i = Long.numberOfTrailingZeros(value);
+        return first ? (i >= 32 ? i + 32 : i + 96) : (i >= 32 ? i - 32 : i + 32);
+    }
+
+    /** The order the client reads the plain stats' fields in (SecondaryStat::DecodeForLocal): by bit, these moved. */
+    private static final int[] BUFF_READ_RANK = new int[128];
+    static {
+        int[] order = new int[128];
+        int n = 0;
+        for (int b = 0; b <= 33; b++) order[n++] = b;
+        order[n++] = 49;
+        for (int b = 34; b <= 47; b++) order[n++] = b;
+        for (int b : new int[]{50, 62, 51, 48, 52, 53, 54, 55, 56, 59, 60, 61}) order[n++] = b;
+        for (int b = 63; b <= 74; b++) order[n++] = b;
+        order[n++] = 57;
+        order[n++] = 58;
+        for (int b = 75; b <= 127; b++) order[n++] = b;
+        for (int r = 0; r < n; r++) BUFF_READ_RANK[order[r]] = r;
+    }
+
+    /** The stats after which the client reads one byte more (it changes how you move): Speed, Jump, Stun, Weakness,
+     *  Slow, Morph, Maple Warrior, Seduce, Ghost, Dash and riding. */
+    private static boolean movesYou(int bit) {
+        return switch (bit) {
+            case 7, 8, 17, 30, 32, 33, 35, 39, 49, 83, 84, 85 -> true;
+            default -> false;
+        };
+    }
+
     public static Packet giveBuff(int buffid, int bufflength, List<Pair<BuffStat, Integer>> statups) {
         final OutPacket p = OutPacket.create(SendOpcode.GIVE_BUFF);
+        if (statups.stream().noneMatch(s -> clientBuffBit(s.getLeft().getValue(), s.getLeft().isFirst()) >= 82)) {
+            // plain stats as the client reads them: the mask, each one's value, reason and time in its read order, then
+            // the two element bytes, the delay, and a byte only if one of them changes how you move
+            writeLongMask(p, statups);
+            List<Pair<BuffStat, Integer>> ordered = new ArrayList<>(statups);
+            ordered.sort(Comparator.comparingInt(s -> BUFF_READ_RANK[clientBuffBit(s.getLeft().getValue(), s.getLeft().isFirst())]));
+            boolean moves = false;
+            for (Pair<BuffStat, Integer> statup : ordered) {
+                moves |= movesYou(clientBuffBit(statup.getLeft().getValue(), statup.getLeft().isFirst()));
+                p.writeShort(statup.getRight().shortValue());
+                p.writeInt(buffid);
+                p.writeInt(bufflength);
+            }
+            p.writeByte(0);
+            p.writeByte(0);
+            p.writeShort(0);
+            if (moves) {
+                p.writeByte(0);
+            }
+            return p;
+        }
+        // riding, Homing Beacon, Energy Charge: as before, until they have writers in the client's two-state layout
         boolean special = false;
         writeLongMask(p, statups);
         for (Pair<BuffStat, Integer> statup : statups) {
@@ -2975,14 +3028,18 @@ public class PacketCreator {
     public static Packet giveDebuff(List<Pair<Disease, Integer>> statups, MobSkill skill) {
         final OutPacket p = OutPacket.create(SendOpcode.GIVE_BUFF);
         writeLongMaskD(p, statups);
+        boolean moves = false;
         for (Pair<Disease, Integer> statup : statups) {
+            moves |= movesYou(clientBuffBit(statup.getLeft().getValue(), statup.getLeft().isFirst()));
             p.writeShort(statup.getRight().shortValue());
             writeMobSkillId(p, skill.getId());
             p.writeInt((int) skill.getDuration());
         }
-        p.writeShort(0); // ??? wk charges have 600 here o.o
+        p.writeShort(0); // the two element bytes
         p.writeShort(900);//Delay
-        p.writeByte(1);
+        if (moves) {   // (Stun, Weakness, Slow, Seduce)
+            p.writeByte(1);
+        }
         return p;
     }
 
@@ -3040,7 +3097,9 @@ public class PacketCreator {
     public static Packet cancelBuff(List<BuffStat> statups) {
         OutPacket p = OutPacket.create(SendOpcode.CANCEL_BUFF);
         writeLongMaskFromList(p, statups);
-        p.writeByte(1);//?
+        if (statups.stream().anyMatch(s -> movesYou(clientBuffBit(s.getValue(), s.isFirst())))) {
+            p.writeByte(1);   // the client reads it only when one of them changed how you move
+        }
         return p;
     }
 
@@ -3107,7 +3166,13 @@ public class PacketCreator {
         OutPacket p = OutPacket.create(SendOpcode.CANCEL_BUFF);
         p.writeLong(0);
         p.writeLong(mask);
-        p.writeByte(0);
+        boolean moves = false;
+        for (long m = mask; m != 0; m &= m - 1) {
+            moves |= movesYou(clientBuffBit(Long.lowestOneBit(m), false));
+        }
+        if (moves) {
+            p.writeByte(0);
+        }
         return p;
     }
 

@@ -1275,7 +1275,8 @@ public class StatEffect implements Cloneable {
         long leftDuration = (starttime + localDuration) - Server.getInstance().getCurrentTime();
         if (leftDuration > 0) {
             if (isDash() || isInfusion()) {
-                target.sendPacket(PacketCreator.givePirateBuff(activeStats, (skill ? sourceid : -sourceid), (int) leftDuration));
+                // (the client reads a pirate buff's term in seconds)
+                target.sendPacket(PacketCreator.givePirateBuff(activeStats, (skill ? sourceid : -sourceid), (int) (leftDuration / 1000)));
             } else {
                 target.sendPacket(PacketCreator.giveBuff((skill ? sourceid : -sourceid), (int) leftDuration, activeStats));
             }
