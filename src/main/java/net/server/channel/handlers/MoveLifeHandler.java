@@ -167,7 +167,10 @@ public final class MoveLifeHandler extends AbstractMovementPacketHandler {
                         useSkillLevel, nextMovementCouldBeSkill, mobMp);
             }
 
-            map.broadcastMessage(player, PacketCreator.moveMonster(objectid, nextMovementCouldBeSkill, rawActivity, useSkillId, useSkillLevel, pOption, startPos, p, movementDataLength), serverStartPos);
+            // an attack's data word goes on whole (its low bytes are the target the client hits for those watching: a
+            // character, a spot, the areas); a skill's are the skill and its level
+            int dataLow = isAttack ? skillId : useSkillId, dataHigh = isAttack ? skillLv : useSkillLevel;
+            map.broadcastMessage(player, PacketCreator.moveMonster(objectid, nextMovementCouldBeSkill, rawActivity, dataLow, dataHigh, pOption, startPos, p, movementDataLength), serverStartPos);
             //updatePosition(res, monster, -2); //does this need to be done after the packet is broadcast?
             map.moveMonster(monster, monster.getPosition());
         } catch (EmptyMovementException e) {

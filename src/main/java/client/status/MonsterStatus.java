@@ -51,8 +51,8 @@ public enum MonsterStatus {
     BLIND(0x2000000), // just added
     SEAL_SKILL(0x4000000),
     INERTMOB(0x10000000),
-    WEAPON_REFLECT(0x20000000, true),
-    MAGIC_REFLECT(0x40000000, true);
+    WEAPON_REFLECT(0x20000000),   // client bits 29, 30 (they were 61, 62: bits the client doesn't read, a garbled spawn)
+    MAGIC_REFLECT(0x40000000);
 
     private final int i;
     private final boolean first;

@@ -1440,15 +1440,14 @@ public class PacketCreator {
     }
 
     private static void encodeParentlessMobSpawnEffect(OutPacket p, boolean newSpawn, int effect) {
+        // as the client reads it: the appearance, and for an effect (0 and up) an option (a delay added to its start);
+        // otherwise -2 (fading in, new) or -1 (already here)
         if (effect > 0) {
             p.writeByte(effect);
-            p.writeByte(0);
-            p.writeShort(0);
-            if (effect == 15) {
-                p.writeByte(0);
-            }
+            p.writeInt(0);
+        } else {
+            p.writeByte(newSpawn ? -2 : -1);
         }
-        p.writeByte(newSpawn ? -2 : -1);
     }
 
     private static void encodeTemporary(OutPacket p, Map<MonsterStatus, MonsterStatusEffect> stati) {
@@ -1524,8 +1523,8 @@ public class PacketCreator {
 
         p.writePos(life.getPosition());
         p.writeByte(life.getStance());
-        p.writeShort(0); //Origin FH //life.getStartFh()
-        p.writeShort(life.getFh());
+        p.writeShort(life.getFh());       // the foothold it's on, then its home one, as the client reads them
+        p.writeShort(life.getStartFh());
 
 
         /**
@@ -1795,8 +1794,7 @@ public class PacketCreator {
     public static Packet killMonster(int objId, int animation) {
         OutPacket p = OutPacket.create(SendOpcode.KILL_MONSTER);
         p.writeInt(objId);
-        p.writeByte(animation);
-        p.writeByte(animation);
+        p.writeByte(animation);   // (the client reads one)
         return p;
     }
 
@@ -4210,17 +4208,25 @@ public class PacketCreator {
             }
             p.writeShort(-1); // might actually be the buffTime but it's not displayed anywhere
         }
-        int size = stati.size(); // size
-        if (reflection != null) {
-            for (Integer ref : reflection) {
-                p.writeInt(ref);
-            }
-            if (reflection.size() > 0) {
-                size /= 2; // This gives 2 buffs per reflection but it's really one buff
-            }
+        // as the client reads it after the values: reflect's counters (weapon, magic) and its chance, the delay, a byte,
+        // and one more when a status changes how it moves (Speed, Stun, Freeze, Doom)
+        boolean weapon = stati.containsKey(MonsterStatus.WEAPON_REFLECT), magic = stati.containsKey(MonsterStatus.MAGIC_REFLECT);
+        MobSkill ms = mse.isMonsterSkill() ? mse.getMobSkill() : null;
+        if (weapon) {
+            p.writeInt(ms != null ? ms.getX() : 0);
         }
-        p.writeByte(size); // size
-        p.writeInt(0);
+        if (magic) {
+            p.writeInt(ms != null ? ms.getY() : 0);
+        }
+        if (weapon || magic) {
+            p.writeInt(100);
+        }
+        p.writeShort(0);   // delay
+        p.writeByte(0);
+        if (stati.containsKey(MonsterStatus.SPEED) || stati.containsKey(MonsterStatus.STUN)
+                || stati.containsKey(MonsterStatus.FREEZE) || stati.containsKey(MonsterStatus.DOOM)) {
+            p.writeByte(0);
+        }
         return p;
     }
 
