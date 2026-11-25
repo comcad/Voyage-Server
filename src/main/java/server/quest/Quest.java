@@ -220,6 +220,12 @@ public class Quest {
         }
     }
 
+    /** Whether the client sends where the player is when it starts or completes this quest: not for an autoStart or
+     *  autoComplete quest (autoPreComplete doesn't count, as the client decides it). */
+    public boolean sendsPosition() {
+        return !autoStart && !autoComplete;
+    }
+
     public boolean isAutoComplete() {
         return autoPreComplete || autoComplete;
     }

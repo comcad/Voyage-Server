@@ -7389,6 +7389,11 @@ public class Character extends AbstractCharacterObject {
         for (QuestStatus mqs : getStartedQuests()) {
             if (mqs.getExpirationTime() > 0) {
                 questTimeLimit2(mqs.getQuest(), mqs.getExpirationTime());
+                // a timeLimit quest's timer bar, which the client keeps only until it leaves: sent again with the time left
+                long timeLeft = mqs.getExpirationTime() - System.currentTimeMillis();
+                if (mqs.getQuest().getTimeLimit() > 0 && timeLeft > 0) {
+                    sendPacket(PacketCreator.addQuestTimeLimit(mqs.getQuest().getId(), (int) timeLeft));
+                }
             }
         }
     }

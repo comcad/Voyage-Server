@@ -3058,7 +3058,7 @@ public class PacketCreator {
         p.writeByte(8); //0x0A in v95
         p.writeShort(quest);
         p.writeInt(npc);
-        p.writeInt(0);
+        p.writeShort(0);   // the next quest (none): a short, as the client reads it
         return p;
     }
 

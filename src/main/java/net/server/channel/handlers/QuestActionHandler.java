@@ -37,11 +37,11 @@ import java.awt.*;
 public final class QuestActionHandler extends AbstractPacketHandler {
 
     // isNpcNearby thanks to GabrielSin
-    private static boolean isNpcNearby(InPacket p, Character player, Quest quest, int npcId) {
+    private static boolean isNpcNearby(InPacket p, Character player, Quest quest, int npcId, boolean hasPosition) {
         Point playerP;
         Point pos = player.getPosition();
 
-        if (p.available() >= 4) {
+        if (hasPosition && p.available() >= 4) {
             playerP = new Point(p.readShort(), p.readShort());
             if (playerP.distance(pos) > 1000) {     // thanks Darter (YungMoozi) for reporting unchecked player position
                 playerP = pos;
@@ -74,14 +74,18 @@ public final class QuestActionHandler extends AbstractPacketHandler {
         Quest quest = Quest.getInstance(questid);
 
         switch (action) {
-        case 0: // Restore lost item, Credits Darter ( Rajan )
-            p.readInt();
-            int itemid = p.readInt();
-            quest.restoreLostItem(player, itemid);
+        case 0: { // Restore lost item, Credits Darter ( Rajan )
+            // as the client sends it: how many, then each item lost
+            int count = p.readInt();
+            for (int i = 0; i < count && p.available() >= 4; i++) {
+                quest.restoreLostItem(player, p.readInt());
+            }
             break;
+        }
         case 1: { // Start Quest
             int npc = p.readInt();
-            if (!isNpcNearby(p, player, quest, npc)) {
+            // (the position comes only for a quest that isn't autoStart / autoComplete, as the client sends it)
+            if (!isNpcNearby(p, player, quest, npc, quest.sendsPosition())) {
                 return;
             }
             if (quest.canStart(player, npc)) {
@@ -91,12 +95,12 @@ public final class QuestActionHandler extends AbstractPacketHandler {
         }
         case 2: { // Complete Quest
             int npc = p.readInt();
-            if (!isNpcNearby(p, player, quest, npc)) {
+            if (!isNpcNearby(p, player, quest, npc, quest.sendsPosition())) {
                 return;
             }
             if (quest.canComplete(player, npc)) {
-                if (p.available() >= 2) {
-                    int selection = p.readShort();
+                if (p.available() >= 4) {
+                    int selection = p.readInt();   // the reward chosen, an int, as the client sends it
                     quest.complete(player, npc, selection);
                 } else {
                     quest.complete(player, npc);
@@ -109,7 +113,7 @@ public final class QuestActionHandler extends AbstractPacketHandler {
             break;
         case 4: { // scripted start quest
             int npc = p.readInt();
-            if (!isNpcNearby(p, player, quest, npc)) {
+            if (!isNpcNearby(p, player, quest, npc, true)) {   // (scripted: always with the position)
                 return;
             }
             if (quest.canStart(player, npc)) {
@@ -119,7 +123,7 @@ public final class QuestActionHandler extends AbstractPacketHandler {
         }
         case 5: { // scripted end quests
             int npc = p.readInt();
-            if (!isNpcNearby(p, player, quest, npc)) {
+            if (!isNpcNearby(p, player, quest, npc, true)) {   // (scripted: always with the position)
                 return;
             }
             if (quest.canComplete(player, npc)) {
