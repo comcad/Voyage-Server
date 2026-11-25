@@ -583,7 +583,13 @@ public class PacketCreator {
         final OutPacket p = OutPacket.create(SendOpcode.GUEST_ID_LOGIN);
         p.writeShort(0x100);
         p.writeInt(Randomizer.nextInt(999999));
-        p.writeLong(0);
+        // as the client reads it: B B B, a string, B B (7 bytes; a long 0 was one too many and shifted the rest)
+        p.writeByte(0);
+        p.writeByte(0);
+        p.writeByte(0);
+        p.writeString("");
+        p.writeByte(0);
+        p.writeByte(0);
         p.writeLong(getTime(-2));
         p.writeLong(getTime(System.currentTimeMillis()));
         p.writeInt(0);
@@ -7021,7 +7027,8 @@ public class PacketCreator {
     public static Packet hitSnowBall(int what, int damage) {
         OutPacket p = OutPacket.create(SendOpcode.HIT_SNOWBALL);
         p.writeByte(what);
-        p.writeInt(damage);
+        p.writeShort(damage);   // as the client reads it: S damage, S delay (ms)
+        p.writeShort(0);
         return p;
     }
 
@@ -7039,7 +7046,7 @@ public class PacketCreator {
     public static Packet snowballMessage(int team, int message) {
         OutPacket p = OutPacket.create(SendOpcode.SNOWBALL_MESSAGE);
         p.writeByte(team);// 0 is down, 1 is up
-        p.writeInt(message);
+        p.writeByte(message);   // the client reads one byte
         return p;
     }
 

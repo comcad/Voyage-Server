@@ -34,6 +34,22 @@ public final class NPCMoreTalkHandler extends AbstractPacketHandler {
     @Override
     public final void handlePacket(InPacket p, Client c) {
         byte lastMsg = p.readByte(); // 00 (last msg type I think)
+        if (lastMsg == 5 || lastMsg == 6) {
+            // the initial quiz and the speed quiz: the client sends the answer alone, with no action byte
+            String answer = p.readString();
+            if (c.getQM() != null) {
+                c.getQM().setGetText(answer);
+                if (c.getQM().isStart()) {
+                    QuestScriptManager.getInstance().start(c, (byte) 1, lastMsg, -1);
+                } else {
+                    QuestScriptManager.getInstance().end(c, (byte) 1, lastMsg, -1);
+                }
+            } else if (c.getCM() != null) {
+                c.getCM().setGetText(answer);
+                NPCScriptManager.getInstance().action(c, (byte) 1, lastMsg, -1);
+            }
+            return;
+        }
         byte action = p.readByte(); // 00 = end chat, 01 == follow
         if (lastMsg == 2) {
             if (action != 0) {
