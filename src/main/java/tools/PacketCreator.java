@@ -697,7 +697,7 @@ public class PacketCreator {
         p.writeByte(2); // Account is banned
         p.writeByte(0);
         p.writeInt(0);
-        p.writeByte(0);
+        p.writeByte(reason);   // the client shows the reason's text only when it isn't 0 (it was always 0)
         p.writeLong(getTime(-1));
         return p;
     }
@@ -2682,6 +2682,16 @@ public class PacketCreator {
         final OutPacket p = OutPacket.create(SendOpcode.CHAR_NAME_RESPONSE);
         p.writeString(charname);
         p.writeByte(nameUsed ? 1 : 0);
+        return p;
+    }
+
+    /**
+     * A character that couldn't be made (ADD_NEW_CHAR_ENTRY with a result and nothing after): 0x1E the name isn't
+     * allowed, anything else a failure notice. The client waits on it.
+     */
+    public static Packet addNewCharEntryFailed(int result) {
+        final OutPacket p = OutPacket.create(SendOpcode.ADD_NEW_CHAR_ENTRY);
+        p.writeByte(result);
         return p;
     }
 

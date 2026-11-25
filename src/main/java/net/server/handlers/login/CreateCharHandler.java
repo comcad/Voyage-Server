@@ -59,12 +59,15 @@ public final class CreateCharHandler extends AbstractPacketHandler {
             status = LegendCreator.createCharacter(c, name, face, hair + haircolor, skincolor, top, bottom, shoes, weapon, gender);
             break;
         default:
-            c.sendPacket(PacketCreator.deleteCharResponse(0, 9));
+            c.sendPacket(PacketCreator.addNewCharEntryFailed(9));
             return;
         }
 
-        if (status == -2) {
-            c.sendPacket(PacketCreator.deleteCharResponse(0, 9));
+        // every failure answers, as the client waits on it: -1 the name (taken or not allowed), -3 no slot, -2 the rest
+        if (status == -1) {
+            c.sendPacket(PacketCreator.addNewCharEntryFailed(0x1E));
+        } else if (status < 0) {
+            c.sendPacket(PacketCreator.addNewCharEntryFailed(9));
         }
     }
 }
