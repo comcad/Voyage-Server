@@ -970,9 +970,12 @@ public class Character extends AbstractCharacterObject {
     private void cancelPlayerBuffs(List<BuffStat> buffstats) {
         if (client.getChannelServer().getPlayerStorage().getCharacterById(getId()) != null) {
             updateLocalStats();
-            sendPacket(PacketCreator.cancelBuff(buffstats));
-            if (buffstats.size() > 0) {
-                getMap().broadcastMessage(this, PacketCreator.cancelForeignBuff(getId(), buffstats), false);
+            Packet cancel = PacketCreator.cancelBuff(buffstats), foreign = PacketCreator.cancelForeignBuff(getId(), buffstats);
+            if (cancel != null) {   // (null: only the server's own stats, nothing for the client)
+                sendPacket(cancel);
+            }
+            if (foreign != null) {
+                getMap().broadcastMessage(this, foreign, false);
             }
         }
     }
@@ -4087,8 +4090,13 @@ public class Character extends AbstractCharacterObject {
         }
 
         if (!inactiveStats.isEmpty()) {
-            sendPacket(PacketCreator.cancelBuff(inactiveStats));
-            getMap().broadcastMessage(this, PacketCreator.cancelForeignBuff(getId(), inactiveStats), false);
+            Packet cancel = PacketCreator.cancelBuff(inactiveStats), foreign = PacketCreator.cancelForeignBuff(getId(), inactiveStats);
+            if (cancel != null) {
+                sendPacket(cancel);
+            }
+            if (foreign != null) {
+                getMap().broadcastMessage(this, foreign, false);
+            }
         }
     }
 

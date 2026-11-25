@@ -1281,7 +1281,10 @@ public class StatEffect implements Cloneable {
                 // (the client reads a pirate buff's term in seconds)
                 target.sendPacket(PacketCreator.givePirateBuff(activeStats, (skill ? sourceid : -sourceid), (int) (leftDuration / 1000)));
             } else {
-                target.sendPacket(PacketCreator.giveBuff((skill ? sourceid : -sourceid), (int) leftDuration, activeStats));
+                Packet buff = PacketCreator.giveBuff((skill ? sourceid : -sourceid), (int) leftDuration, activeStats);
+                if (buff != null) {
+                    target.sendPacket(buff);
+                }
             }
         }
     }

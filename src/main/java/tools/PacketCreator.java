@@ -2848,6 +2848,19 @@ public class PacketCreator {
         };
     }
 
+    /**
+     * Whether a stat goes to the client at all. Summons, the puppet, the exp / drop coupons and EXP-increase items have no
+     * stat in the client (its summons need none; their rates are the server's): they're the server's own bookkeeping, and
+     * the bits they had were others' (Combo's, a disease's, the immunity piercing's).
+     */
+    private static boolean sentToClient(BuffStat s) {
+        return switch (s) {
+            case SUMMON, PUPPET, COUPON_EXP1, COUPON_EXP2, COUPON_EXP3, COUPON_EXP4, COUPON_DRP1, COUPON_DRP2, COUPON_DRP3,
+                 EXP_INCREASE -> false;
+            default -> true;
+        };
+    }
+
     /** A two-state stat's common part in GIVE_BUFF: its value, its reason, its time (a byte and an int). */
     private static void writeTwoState(OutPacket p, int value, int reason) {
         p.writeInt(value);
@@ -2917,7 +2930,12 @@ public class PacketCreator {
         return p;
     }
 
+    /** GIVE_BUFF for these stats, or null when none of them goes to the client (see sentToClient). */
     public static Packet giveBuff(int buffid, int bufflength, List<Pair<BuffStat, Integer>> statups) {
+        statups = statups.stream().filter(s -> sentToClient(s.getLeft())).toList();
+        if (statups.isEmpty()) {
+            return null;
+        }
         final OutPacket p = OutPacket.create(SendOpcode.GIVE_BUFF);
         if (statups.stream().noneMatch(s -> clientBuffBit(s.getLeft().getValue(), s.getLeft().isFirst()) >= 82)) {
             // plain stats as the client reads them: the mask, each one's value, reason and time in its read order, then
@@ -3146,14 +3164,24 @@ public class PacketCreator {
         return p;
     }
 
+    /** CANCEL_FOREIGN_BUFF, or null when none of them goes to the client. */
     public static Packet cancelForeignBuff(int chrId, List<BuffStat> statups) {
+        statups = statups.stream().filter(PacketCreator::sentToClient).toList();
+        if (statups.isEmpty()) {
+            return null;
+        }
         OutPacket p = OutPacket.create(SendOpcode.CANCEL_FOREIGN_BUFF);
         p.writeInt(chrId);
         writeLongMaskFromList(p, statups);
         return p;
     }
 
+    /** CANCEL_BUFF, or null when none of them goes to the client. */
     public static Packet cancelBuff(List<BuffStat> statups) {
+        statups = statups.stream().filter(PacketCreator::sentToClient).toList();
+        if (statups.isEmpty()) {
+            return null;
+        }
         OutPacket p = OutPacket.create(SendOpcode.CANCEL_BUFF);
         writeLongMaskFromList(p, statups);
         if (statups.stream().anyMatch(s -> movesYou(clientBuffBit(s.getValue(), s.isFirst())))) {
