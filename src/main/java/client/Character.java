@@ -5203,6 +5203,11 @@ public class Character extends AbstractCharacterObject {
         return level;
     }
 
+    /** Whether a Dark Knight's Berserk is on (HP under its threshold). */
+    public boolean isBerserk() {
+        return berserk;
+    }
+
     public int getFh() {
         Point pos = this.getPosition();
         pos.y -= 6;

@@ -37,10 +37,12 @@ public final class PetChatHandler extends AbstractPacketHandler {
     public void handlePacket(InPacket p, Client c) {
         int petId = p.readInt();
         p.readInt();
-        p.readByte();
+        // as the client sends it: the kind (0 a command's answer, 1 food's, 2 repeating its owner), then the action
+        // (0 under 9, else the pet's own action, 9 and up)
+        byte type = p.readByte();
         int act = p.readByte();
         byte pet = c.getPlayer().getPetIndex(petId);
-        if ((pet < 0 || pet > 3) || (act < 0 || act > 9)) {
+        if ((pet < 0 || pet > 3) || act < 0) {
             return;
         }
         String text = p.readString();
@@ -50,7 +52,7 @@ public final class PetChatHandler extends AbstractPacketHandler {
             c.disconnect(true, false);
             return;
         }
-        c.getPlayer().getMap().broadcastMessage(c.getPlayer(), PacketCreator.petChat(c.getPlayer().getId(), pet, act, text, PacketCreator.petQuoteRing(c.getPlayer(), pet)), true);
+        c.getPlayer().getMap().broadcastMessage(c.getPlayer(), PacketCreator.petChat(c.getPlayer().getId(), pet, type, act, text, PacketCreator.petQuoteRing(c.getPlayer(), pet)), true);
         ChatLogger.log(c, "Pet", text);
     }
 }

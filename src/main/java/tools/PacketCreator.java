@@ -95,6 +95,7 @@ import server.life.MobSkillId;
 import server.life.Monster;
 import server.life.NPC;
 import server.life.PlayerNPC;
+import server.maps.Foothold;
 import server.maps.AbstractMapObject;
 import server.maps.Door;
 import server.maps.DoorObject;
@@ -1976,7 +1977,9 @@ public class PacketCreator {
             p.writeByte(chr.getStance());
         }
 
-        p.writeShort(0);//chr.getFh()
+        // the foothold they stand on, by id (the client puts them on it); none for one dropping in as they arrive
+        Foothold standing = enteringField ? null : chr.getMap().getFootholds().findBelow(chr.getPosition());
+        p.writeShort(standing != null ? standing.getId() : 0);
         p.writeByte(0);
         Pet[] pet = chr.getPets();
         for (int i = 0; i < 3; i++) {
@@ -1996,11 +1999,7 @@ public class PacketCreator {
 
         PlayerShop mps = chr.getPlayerShop();
         if (mps != null && mps.isOwner(chr)) {
-            if (mps.hasFreeSlot()) {
-                addAnnounceBox(p, mps, mps.getVisitors().length);
-            } else {
-                addAnnounceBox(p, mps, 1);
-            }
+            updatePlayerShopBoxInfo(p, mps);   // the same sign UPDATE_CHAR_BOX shows
         } else {
             MiniGame miniGame = chr.getMiniGame();
             if (miniGame != null && miniGame.isOwner(chr)) {
@@ -2024,7 +2023,7 @@ public class PacketCreator {
         addRingLook(p, chr, false); // friendship
         addMarriageRingLook(target, p, chr);
         encodeNewYearCardInfo(p, chr);  // new year seems to crash sometimes...
-        p.writeByte(0);
+        p.writeBool(chr.isBerserk());   // a Dark Knight's Berserk aura, from the start
         p.writeByte(0);
         p.writeByte(chr.getTeam());//only needed in specific fields
         return p;
@@ -4698,10 +4697,15 @@ public class PacketCreator {
 
     /** A pet's line: balloon, its Quote Ring is worn (the client then draws its own chat balloon). */
     public static Packet petChat(int cid, byte index, int act, String text, boolean balloon) {
+        return petChat(cid, index, (byte) 0, act, text, balloon);
+    }
+
+    /** With the kind the client gave its line (0 a command's answer: only then does it play an action of 9 and up). */
+    public static Packet petChat(int cid, byte index, byte type, int act, String text, boolean balloon) {
         final OutPacket p = OutPacket.create(SendOpcode.PET_CHAT);
         p.writeInt(cid);
         p.writeByte(index);
-        p.writeByte(0);
+        p.writeByte(type);
         p.writeByte(act);
         p.writeString(text);
         p.writeBool(balloon);
