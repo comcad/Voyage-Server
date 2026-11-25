@@ -49,11 +49,9 @@ function start(mode, type, selection) {
             qm.sendAcceptDecline("All right, now, this key is very long and complex. I need you to memorize it very well. I won't say again, so you'd better write it down somewhere. Are you ready?");
         } else if (status == 2) {
             pass = generateString();
-            qm.sendOk("The key code is #b" + pass + "#k. Got that? Put the key into the door of the secret passage, and you will be able to walk around the passage freely.");
-        } else if (status == 3) {
             qm.forceStartQuest();
             qm.setQuestProgress(3360, pass);
-            qm.dispose();
+            qm.sendOk("The key code is #b" + pass + "#k. Got that? Put the key into the door of the secret passage, and you will be able to walk around the passage freely.");
         }
     }
 }

@@ -16,7 +16,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("I understand it's not an easy task, but I can't make #bKiller Mushroom Spores#k without them. Please reconsider.");
+            if (mode == 0) {
+                qm.sendOk("I understand it's not an easy task, but I can't make #bKiller Mushroom Spores#k without them. Please reconsider.");
+            }
             qm.dispose();
             return;
         }
@@ -42,7 +44,7 @@ function end(mode, type, selection) {
         }
     }
     if (status == 0) {
-        qm.sendOk("Did you gather up all the necessary ingredients for it?")
+        qm.sendNext("Did you gather up all the necessary ingredients for it?")
     } else if (status == 1) {
         if (!qm.haveItem(4000499, 50)) {
             qm.sendOk("Please gather all the ingredients first.");
@@ -52,13 +54,11 @@ function end(mode, type, selection) {
 
         qm.sendNext("These should be enough for me to make the #bKiller Mushroom Spores.#k Please hold on for a bit.");
     } else if (status == 2) {
-        qm.sendOk("Okay, here are the Killer Mushroom Spores. Hopefully this will be enough for you to save our princess and help regain our kingdom. Good luck!");
-    } else if (status == 3) {
         qm.forceCompleteQuest();
         qm.gainExp(11500);
         qm.gainItem(4000499, -50);
         qm.gainItem(2430014, 1);
-        qm.dispose();
+        qm.sendOk("Okay, here are the Killer Mushroom Spores. Hopefully this will be enough for you to save our princess and help regain our kingdom. Good luck!");
     }
 }
 	

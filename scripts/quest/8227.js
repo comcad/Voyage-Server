@@ -15,7 +15,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("Come on, the city really needs you cooperating on this one!");
+            if (mode == 0) {
+                qm.sendOk("Come on, the city really needs you cooperating on this one!");
+            }
             qm.dispose();
             return;
         }

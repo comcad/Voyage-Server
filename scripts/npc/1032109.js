@@ -29,8 +29,6 @@ function action(mode, type, selection) {
 
 
     if (status == 0) {
-        cm.sendOk("A mysterious black figure appeared and summoned a lot of angry monsters!");
-    } else if (status == 1) {
         var player = cm.getPlayer();
         var map = player.getMap();
 
@@ -48,7 +46,8 @@ function action(mode, type, selection) {
 
         cm.completeQuest(20718, 1103003);
         cm.gainExp(4000 * cm.getPlayer().getExpRate());
-
+        cm.sendOk("A mysterious black figure appeared and summoned a lot of angry monsters!");
+    } else if (status == 1) {
         cm.dispose();
 
     }

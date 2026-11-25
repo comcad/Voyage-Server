@@ -15,7 +15,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("Okay, then. See you around.");
+            if (mode == 0) {
+                qm.sendOk("Okay, then. See you around.");
+            }
             qm.dispose();
             return;
         }
@@ -36,7 +38,9 @@ function end(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("Okay, then. See you around.");
+            if (mode == 0) {
+                qm.sendOk("Okay, then. See you around.");
+            }
             qm.dispose();
             return;
         }
@@ -44,17 +48,13 @@ function end(mode, type, selection) {
     if (status == 0) {
         qm.sendNext("Who are you? Oh, you came here by my brother John's stead? Great.");
     } else if (status == 1) {
-        qm.sendOk("It seems you helped the folks at the city at some errands, don't you? I shall appraise you nicely. Take a look on this: this is a map of the Phantom Forest, which I made myself after enough exploration. Take possession of that, and you #bwill be granted passage#k by paths other times undiscoverable. Remember well to #rnever lose it#k, you won't be having that again!\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0# \r\n#i3992040# #t3992040#\r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 175000 EXP");
-    } else if (status == 2) {
         if (qm.canHold(3992040, 1)) {
             qm.forceCompleteQuest();
             qm.gainItem(3992040, 1);
             qm.gainExp(175000);
-            qm.dispose();
+            qm.sendOk("It seems you helped the folks at the city at some errands, don't you? I shall appraise you nicely. Take a look on this: this is a map of the Phantom Forest, which I made myself after enough exploration. Take possession of that, and you #bwill be granted passage#k by paths other times undiscoverable. Remember well to #rnever lose it#k, you won't be having that again!\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0# \r\n#i3992040# #t3992040#\r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 175000 EXP");
         } else {
             qm.sendOk("Hey, you don't have a slot in your SETUP inventory for what I have to give to you. Solve that minor issue of yours then talk to me.");
         }
-    } else if (status == 3) {
-        qm.dispose();
     }
 }

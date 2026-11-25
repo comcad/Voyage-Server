@@ -16,7 +16,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendNext("Really? Is there another way you can penetrate the castle? If you don't know of one, then just come see me.");
+            if (mode == 0) {
+                qm.sendNext("Really? Is there another way you can penetrate the castle? If you don't know of one, then just come see me.");
+            }
             qm.dispose();
             return;
         }
@@ -47,7 +49,7 @@ function end(mode, type, selection) {
         }
     }
     if (status == 0) {
-        qm.sendOk("Hmmm I see... so they have completely shut off the entrance and everything.");
+        qm.sendNext("Hmmm I see... so they have completely shut off the entrance and everything.");
     } else if (status == 1) {
         qm.forceCompleteQuest();
         qm.gainExp(11000);

@@ -68,11 +68,22 @@ function action(mode, type, selection) {
                             stage = parseInt(eim.getProperty("stage1phase"));
                         }
 
+                        var reactors = getReactors();
+                        var combo = makeCombo(reactors);
+                        cm.mapMessage(5, "Please wait while the combination is revealed.");
+                        var delay = 5000;
+                        for (var i = 0; i < combo.length; i++) {
+                            cm.getPlayer().getMap().getReactorByOid(combo[i]).delayedHitReactor(cm.getClient(), delay + 3500 * i);
+                        }
+                        eim.setProperty("stage1status", "display");
+                        eim.setProperty("stage1combo", "");
+
                         if (stage == 1) {
                             cm.sendOk("In this challenge, I shall show a pattern on the statues around me. When I give the word, repeat the pattern to me to proceed.");
                         } else {
                             cm.sendOk("I shall now present a more difficult puzzle for you. Good luck.");
                         }
+                        cm.dispose();
                     } else if (eim.getProperty("stage1status") === "active") {
                         stage = parseInt(eim.getProperty("stage1phase"));
 
@@ -101,17 +112,6 @@ function action(mode, type, selection) {
                         cm.sendOk("The statues are working on the pattern. Please wait.");
                         cm.dispose();
                     }
-                } else if (status == 1) {
-                    var reactors = getReactors();
-                    var combo = makeCombo(reactors);
-                    cm.mapMessage(5, "Please wait while the combination is revealed.");
-                    var delay = 5000;
-                    for (var i = 0; i < combo.length; i++) {
-                        cm.getPlayer().getMap().getReactorByOid(combo[i]).delayedHitReactor(cm.getClient(), delay + 3500 * i);
-                    }
-                    eim.setProperty("stage1status", "display");
-                    eim.setProperty("stage1combo", "");
-                    cm.dispose();
                 }
             } else {
                 cm.sendOk("I need the leader of this instance to speak with me, nobody else.");

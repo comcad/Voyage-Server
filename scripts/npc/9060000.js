@@ -40,14 +40,12 @@ function action(mode, type, selection) {
     }
 
     if (status == 0) {
-        cm.sendOk("Well okay, I will send you back.");
-    } else {
         if (completed) {
             cm.getEventInstance().clearPQ();
         } else {
             cm.warp(923010100, 0);
         }
-
+        cm.sendOk("Well okay, I will send you back.");
         cm.dispose();
     }
 }

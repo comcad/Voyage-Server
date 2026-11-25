@@ -41,6 +41,7 @@ function start() {
 function action(mode, type, selection) {
     if (mode == -1) {
         cm.dispose();
+        return;
     } else if (mode == 0) {
         status--;
         start();

@@ -45,13 +45,13 @@ function action(mode, type, selection) {
         if (cm.getMapId() == 925100500) {
             if (status == 0) {
                 if (cm.isEventLeader()) {
+                    cm.getEventInstance().clearPQ();
                     cm.sendOk("I have been saved thanks to your efforts! Thank you, guys!");
                 } else {
                     cm.sendOk("I have been saved thanks to your efforts! Thank you, guys! Let your party leader talk to me first before I give you your rewards...");
                     cm.dispose();
                 }
             } else {
-                cm.getEventInstance().clearPQ();
                 cm.dispose();
             }
         } else {

@@ -49,7 +49,7 @@ function action(mode, type, selection) {
         } else if (eim.getIntProperty("glpq6") == 1) {
             if (cm.getMap().countMonsters() == 0) {
                 if (status == 0) {
-                    cm.sendOk("Eh. What is this? You've defeated them?");
+                    cm.sendNext("Eh. What is this? You've defeated them?");
                 } else if (status == 1) {
                     cm.sendNext("Well, no matter! The Twisted Masters will be glad to welcome you.");
                     cm.mapMessage(6, "Twisted Masters approach!");

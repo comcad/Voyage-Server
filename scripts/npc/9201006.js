@@ -76,7 +76,9 @@ function action(mode, type, selection) {
                     }
                     cm.dispose();
                 } else {
+                    cm.warp(680000000, 0);
                     cm.sendOk("You do not have the required item to continue through this wedding. Unfortunately, it's over...");
+                    cm.dispose();
                 }
             } else {
                 if (eim.getIntProperty("weddingStage") == 3) {

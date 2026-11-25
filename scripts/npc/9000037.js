@@ -95,11 +95,20 @@ function action(mode, type, selection) {
                     cm.getEventInstance().setProperty("clear", "true");
                 }
 
+                if (!cm.getPlayer().getEventInstance().giveEventReward(cm.getPlayer(), 6)) {
+                    cm.sendOk("Please arrange a slot in all tabs of your inventory beforehand.");
+                    cm.dispose();
+                    return;
+                }
+
+                cm.warp(970030000);
+
                 if (cm.isEventLeader()) {
                     cm.sendOk("Your party completed such an astounding feat coming this far, #byou have defeated all the bosses#k, congratulations! Now I will be handing your reward as you are being transported out...");
                 } else {
                     cm.sendOk("For #bdefeating all bosses#k in this instance, congratulations! You will now receive a prize that matches your performance here as I warp you out.");
                 }
+                cm.dispose();
             } else if (state == 2) {
                 if (cm.isEventLeader()) {
                     if (cm.getPlayer().getEventInstance().isEventTeamTogether()) {
@@ -130,16 +139,7 @@ function action(mode, type, selection) {
                 cm.sendSimple("#e#b<Party Quest: Boss Rush>\r\n#k#n" + em.getProperty("party") + "\r\n\r\nWould you like to collaborate with party members to complete the expedition, or are you brave enough to take it on all by yourself? Have your #bparty leader#k talk to me or make yourself a party.#b\r\n#L0#I want to participate in the party quest.\r\n#L1#I would like to " + (cm.getPlayer().isRecvPartySearchInviteEnabled() ? "disable" : "enable") + " Party Search.\r\n#L2#I would like to hear more details.");
             }
         } else if (status == 1) {
-            if (state == 3) {
-                if (!cm.getPlayer().getEventInstance().giveEventReward(cm.getPlayer(), 6)) {
-                    cm.sendOk("Please arrange a slot in all tabs of your inventory beforehand.");
-                    cm.dispose();
-                    return;
-                }
-
-                cm.warp(970030000);
-                cm.dispose();
-            } else if (state == 2) {
+            if (state == 2) {
                 var restSpot = ((cm.getMapId() - 1) % 5) + 1;
                 cm.getPlayer().getEventInstance().restartEventTimer(restSpot * 4 * 60000);  // adds (restspot number * 4) minutes
                 cm.getPlayer().getEventInstance().warpEventTeam(970030100 + cm.getEventInstance().getIntProperty("lobby") + (500 * restSpot));

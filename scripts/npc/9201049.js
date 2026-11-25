@@ -44,7 +44,7 @@ function action(mode, type, selection) {
         }
 
         if (status == 0) {
-            cm.sendOk("Hey there, did you enjoy the wedding? I will head you back to #bAmoria#k now.");
+            cm.sendNext("Hey there, did you enjoy the wedding? I will head you back to #bAmoria#k now.");
         } else if (status == 1) {
             var eim = cm.getEventInstance();
             if (eim != null) {

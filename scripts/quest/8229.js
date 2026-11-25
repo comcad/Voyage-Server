@@ -15,7 +15,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("Come on, the city really needs you cooperating on this one!");
+            if (mode == 0) {
+                qm.sendOk("Come on, the city really needs you cooperating on this one!");
+            }
             qm.dispose();
             return;
         }
@@ -48,16 +50,13 @@ function end(mode, type, selection) {
     }
     if (status == 0) {
         if (qm.haveItem(4032018, 1)) {
+            qm.gainItem(4032018, -1);
+            qm.gainExp(50000);
+            qm.forceCompleteQuest();
             qm.sendOk("Oh, you brought it. Nicely done, the countermeasure process will be much easier now.\r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0# \r\n\r\n#fUI/UIWindow.img/QuestIcon/8/0# 50000 EXP");
         } else {
             qm.sendOk("What's wrong? Why you didn't retrieved the translated message yet? Please bring me the letter's content for me to strategize a countermeasure ASAP.");
             qm.dispose();
         }
-    } else if (status == 1) {
-        qm.gainItem(4032018, -1);
-        qm.gainExp(50000);
-        qm.forceCompleteQuest();
-
-        qm.dispose();
     }
 }

@@ -16,7 +16,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("Please do not forget our plea for help.");
+            if (mode == 0) {
+                qm.sendOk("Please do not forget our plea for help.");
+            }
             qm.dispose();
             return;
         }
@@ -42,7 +44,7 @@ function end(mode, type, selection) {
         }
     }
     if (status == 0) {
-        qm.sendOk("What? You investigated the barrier at the Mushroom Forest?");
+        qm.sendNext("What? You investigated the barrier at the Mushroom Forest?");
     } else if (status == 1) {
         qm.forceCompleteQuest();
         qm.gainExp(4000);

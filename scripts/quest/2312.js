@@ -16,7 +16,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("Hmmm... you must be unsure of your combat skills. We'll be here waiting for you, so come see us when you're ready.");
+            if (mode == 0) {
+                qm.sendOk("Hmmm... you must be unsure of your combat skills. We'll be here waiting for you, so come see us when you're ready.");
+            }
             qm.dispose();
             return;
         }
@@ -42,7 +44,7 @@ function end(mode, type, selection) {
         }
     }
     if (status == 0) {
-        qm.sendOk("Did you teach those Renegade Spores a lesson?");
+        qm.sendNext("Did you teach those Renegade Spores a lesson?");
     } else if (status == 1) {
         qm.forceCompleteQuest();
         qm.gainExp(11500);

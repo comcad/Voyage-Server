@@ -66,15 +66,15 @@ function end(mode, type, selection) {
     } else if (status == 1) {
         if (selection == 1) {
             qm.playSound("Party1/Failed");
-            qm.sendOk("Awkwardly familiar...");
+            qm.sendNext("Awkwardly familiar...");
             status = -1;
         } else if (selection == 2) {
             qm.playSound("Coconut/Failed");
-            qm.sendOk("Was it this?");
+            qm.sendNext("Was it this?");
             status = -1;
         } else if (selection == 3) {
             qm.playSound("quest2288/6");
-            qm.sendOk("You heard that?");
+            qm.sendNext("You heard that?");
             status = -1;
         } else if (selection == 4) {
             qm.sendGetNumber("Now, please tell me the answer. You only get #bone chance#k, so please choose wisely. Please enter #b1, 2, or 3#k in the window below.\r\n", 1, 1, 3);

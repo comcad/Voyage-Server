@@ -224,7 +224,10 @@ function action(mode, type, selection) {
                                 if (cserv.isOngoingWeddingGuest(cathedralWedding, cm.getPlayer().getId())) {
                                     var eim = getMarriageInstance(wid);
                                     if (eim != null) {
+                                        cm.gainItem(weddingGuestTicket, -1);
+                                        eim.registerPlayer(cm.getPlayer());     //cm.warp(680000210, 0);
                                         cm.sendOk("Enjoy the wedding. Don't drop your Gold Maple Leaf or you won't be able to finish the whole wedding.");
+                                        cm.dispose();
                                     } else {
                                         cm.sendOk("Please wait a moment while the couple get ready to enter the Cathedral.");
                                         cm.dispose();
@@ -265,17 +268,6 @@ function action(mode, type, selection) {
 
                         cm.dispose();
                 }
-            } else if (status == 2) {   // registering guest
-                var eim = getMarriageInstance(wid);
-
-                if (eim != null) {
-                    cm.gainItem(weddingGuestTicket, -1);
-                    eim.registerPlayer(cm.getPlayer());     //cm.warp(680000210, 0);
-                } else {
-                    cm.sendOk("The marriage event could not be found.");
-                }
-
-                cm.dispose();
             }
         } else {
             if (status == 0) {

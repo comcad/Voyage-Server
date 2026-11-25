@@ -43,13 +43,11 @@ function start(mode, type, selection) {
         } else if (status == 1) {
             qm.sendNext("The battle against the evil nature of the Black Mage who wants to swallow up Maple World as a whole, the cunning nature of his disciples, and the physical battle against the crazy monsters will await you. There will also come a time where even you may turn against yourself into an enemy and torment you ...");
         } else if (status == 2) {
-            qm.sendOk("But I won't worry about that. I am confident that you will be able to fight through all that and protect Maple World from the Black Mage. Of course, you'll have to become a bit stronger than you are right now, right?");
-        } else if (status == 3) {
             qm.gainItem(1142065, 1); // Noblesse Medal * 1
             qm.gainExp(20); //gain 20 exp!!
             qm.forceStartQuest();
             qm.forceCompleteQuest();
-            qm.dispose();
+            qm.sendOk("But I won't worry about that. I am confident that you will be able to fight through all that and protect Maple World from the Black Mage. Of course, you'll have to become a bit stronger than you are right now, right?");
         }
     }
 }

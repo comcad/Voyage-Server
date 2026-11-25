@@ -126,7 +126,37 @@ function action(mode, type, selection) {
                             return;
                         }
 
-                        cm.sendOk("Alright! The couple appeared here stylish as ever. Let's go folks, let's rock 'n' roll!!!");
+                        var wtype = cserv.getOngoingWeddingType(cathedralWedding);
+                        if (cserv.acceptOngoingWedding(cathedralWedding)) {
+                            var wid = cm.getClient().getWorldServer().getRelationshipId(cm.getPlayer().getId());
+                            if (wid > 0) {
+                                var em = cm.getEventManager(weddingEventName);
+                                if (em.startInstance(cm.getPlayer())) {
+                                    eim = getMarriageInstance(cm.getPlayer());
+                                    if (eim != null) {
+                                        eim.setIntProperty("weddingId", wid);
+                                        eim.setIntProperty("groomId", cm.getPlayer().getId());
+                                        eim.setIntProperty("brideId", cm.getPlayer().getPartnerId());
+                                        eim.setIntProperty("isPremium", wtype ? 1 : 0);
+
+                                        eim.registerPlayer(partner);
+                                        cm.sendOk("Alright! The couple appeared here stylish as ever. Let's go folks, let's rock 'n' roll!!!");
+                                    } else {
+                                        cm.sendOk("An unexpected error happened when locating the wedding event. Please try again later.");
+                                    }
+
+                                    cm.dispose();
+                                } else {
+                                    cm.sendOk("An unexpected error happened before the wedding preparations. Please try again later.");
+                                    cm.dispose();
+                                }
+                            } else {
+                                cm.sendOk("An unexpected error happened before the wedding preparations. Please try again later.");
+                                cm.dispose();
+                            }
+                        } else {    // partner already decided to start
+                            cm.dispose();
+                        }
                     } else {
                         cm.sendOk("Aww, your partner is elsewhere... Both must be here for the wedding, else it's going to be sooooo lame.");
                         cm.dispose();
@@ -139,45 +169,6 @@ function action(mode, type, selection) {
                 }
             } else {
                 cm.sendOk("Aawww, I'm sorry but there are no reservations made for you at this channel for the time being.");
-                cm.dispose();
-            }
-        } else if (status == 2) {
-            var cserv = cm.getClient().getChannelServer();
-            var wtype = cserv.getOngoingWeddingType(cathedralWedding);
-
-            var partner = cserv.getPlayerStorage().getCharacterById(cm.getPlayer().getPartnerId());
-            if (!(partner == null || !cm.getMap().equals(partner.getMap()))) {
-                if (cserv.acceptOngoingWedding(cathedralWedding)) {
-                    var wid = cm.getClient().getWorldServer().getRelationshipId(cm.getPlayer().getId());
-                    if (wid > 0) {
-                        var em = cm.getEventManager(weddingEventName);
-                        if (em.startInstance(cm.getPlayer())) {
-                            eim = getMarriageInstance(cm.getPlayer());
-                            if (eim != null) {
-                                eim.setIntProperty("weddingId", wid);
-                                eim.setIntProperty("groomId", cm.getPlayer().getId());
-                                eim.setIntProperty("brideId", cm.getPlayer().getPartnerId());
-                                eim.setIntProperty("isPremium", wtype ? 1 : 0);
-
-                                eim.registerPlayer(partner);
-                            } else {
-                                cm.sendOk("An unexpected error happened when locating the wedding event. Please try again later.");
-                            }
-
-                            cm.dispose();
-                        } else {
-                            cm.sendOk("An unexpected error happened before the wedding preparations. Please try again later.");
-                            cm.dispose();
-                        }
-                    } else {
-                        cm.sendOk("An unexpected error happened before the wedding preparations. Please try again later.");
-                        cm.dispose();
-                    }
-                } else {    // partner already decided to start
-                    cm.dispose();
-                }
-            } else {
-                cm.sendOk("Aww, it seems your partner is elsewhere... Both must be here for the wedding, else it's going to be sooooo lame.");
                 cm.dispose();
             }
         }

@@ -79,7 +79,9 @@ function action(mode, type, selection) {
                         }
                         cm.dispose();
                     } else {
+                        cm.warp(680000000, 0);
                         cm.sendOk("Oh, hey, where are the credentials for the this so-lauded party? Oh man, we can't continue at this rate now... Sorry, the party is over.");
+                        cm.dispose();
                     }
                 } else {
                     if (eim.getIntProperty("weddingStage") == 3) {

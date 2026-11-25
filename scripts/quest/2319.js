@@ -16,7 +16,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("I know it's not a tough task, so come back to me if you're ready.");
+            if (mode == 0) {
+                qm.sendOk("I know it's not a tough task, so come back to me if you're ready.");
+            }
             qm.dispose();
             return;
         }
@@ -43,7 +45,7 @@ function end(mode, type, selection) {
         }
     }
     if (status == 0) {
-        qm.sendOk("Are the #bKiller Mushroom Spores#k finally completed?");
+        qm.sendNext("Are the #bKiller Mushroom Spores#k finally completed?");
     } else if (status == 1) {
         qm.forceCompleteQuest();
         qm.gainExp(4200);

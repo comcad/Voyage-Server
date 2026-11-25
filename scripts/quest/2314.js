@@ -16,7 +16,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendNext("Please do not lose faith in our Kingdom of Mushroom.");
+            if (mode == 0) {
+                qm.sendNext("Please do not lose faith in our Kingdom of Mushroom.");
+            }
             qm.dispose();
             return;
         }
@@ -47,7 +49,7 @@ function end(mode, type, selection) {
         }
     }
     if (status == 0) {
-        qm.sendOk("I see that you have thoroughly investigated the barrier at the Mushroom Forest. What was it like?");
+        qm.sendNext("I see that you have thoroughly investigated the barrier at the Mushroom Forest. What was it like?");
     } else if (status == 1) {
         qm.forceCompleteQuest();
         qm.gainExp(8300);

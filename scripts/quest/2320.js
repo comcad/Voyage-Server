@@ -16,7 +16,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("I wanted you to personally give this piece of good news to #bBruce#k, but I understand if you're busy.");
+            if (mode == 0) {
+                qm.sendOk("I wanted you to personally give this piece of good news to #bBruce#k, but I understand if you're busy.");
+            }
             qm.dispose();
             return;
         }
@@ -43,7 +45,7 @@ function end(mode, type, selection) {
         }
     }
     if (status == 0) {
-        qm.sendOk("Oh! You're here on behalf of #bScarrs#k? \r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0# \r\n#fUI/UIWindow.img/QuestIcon/8/0# 8800 exp");
+        qm.sendNext("Oh! You're here on behalf of #bScarrs#k? \r\n\r\n#fUI/UIWindow.img/QuestIcon/4/0# \r\n#fUI/UIWindow.img/QuestIcon/8/0# 8800 exp");
     } else if (status == 1) {
         qm.forceCompleteQuest();
         qm.gainExp(8800);

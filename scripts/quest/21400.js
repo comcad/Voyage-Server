@@ -5,8 +5,9 @@ function start(mode, type, selection) {
     if (mode == 0 && type == 0) {
         status -= 2;
     } else if (mode != 1) {
-        //if (mode == 0)
-        qm.sendNext("#b(You need to think about this for a second...)#k");
+        if (mode == 0) {
+            qm.sendNext("#b(You need to think about this for a second...)#k");
+        }
         qm.dispose();
         return;
     }

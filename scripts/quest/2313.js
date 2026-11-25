@@ -16,7 +16,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("There's not much time. Please hurry.");
+            if (mode == 0) {
+                qm.sendOk("There's not much time. Please hurry.");
+            }
             qm.dispose();
             return;
         }

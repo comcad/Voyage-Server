@@ -47,14 +47,12 @@ function action(mode, type, selection) {
                 cm.dispose();
                 return;
             }
-
-            cm.sendOk("Darn, you found me! Then, there's only one way out! Let's fight, like #rBlack Wings#k should!");
-        } else if (status == 1) {
             var mapobj = cm.getMap();
             var npcpos = mapobj.getMapObject(cm.getNpcObjectId()).getPosition();
-
             spawnMob(npcpos.x, npcpos.y, 9001009, mapobj);
             mapobj.destroyNPC(npcid);
+            cm.sendOk("Darn, you found me! Then, there's only one way out! Let's fight, like #rBlack Wings#k should!");
+        } else if (status == 1) {
             cm.dispose();
         }
     }

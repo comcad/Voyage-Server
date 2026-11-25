@@ -64,9 +64,9 @@ function action(mode, type, selection) {
             }
         } else if (cm.getPlayer().getMap().getId() == 910010300) { //Exit map
             if (status == 0) {
+                cm.warp(100000200);
                 cm.sendOk("You will now be warped out, thank you for helping us!");
             } else {
-                cm.warp(100000200);
                 cm.dispose();
 
             }

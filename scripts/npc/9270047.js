@@ -155,8 +155,22 @@ function action(mode, type, selection) {
                     return;
                 }
 
+                if (em == null) {
+                    cm.sendOk("The event could not be initialized, please report this on the forum.");
+                    cm.dispose();
+                    return;
+                }
+
+                em.setProperty("leader", player.getName());
+                em.setProperty("channel", player.getClient().getChannel());
+                if (!em.startInstance(expedition)) {
+                    cm.sendOk("Another expedition has taken the initiative to challenge " + expedBoss + ", lets pray for those brave souls.");
+                    cm.dispose();
+                    return;
+                }
+
                 cm.sendOk("The expedition will begin and you will now be escorted to the #b" + expedMap + "#k.");
-                status = 4;
+                cm.dispose();
             } else if (selection == 3) {
                 const PacketCreator = Java.type('tools.PacketCreator');
                 player.getMap().broadcastMessage(PacketCreator.serverNotice(6, expedition.getLeader().getName() + " has ended the expedition."));
@@ -165,23 +179,6 @@ function action(mode, type, selection) {
                 cm.dispose();
 
             }
-        } else if (status == 4) {
-            if (em == null) {
-                cm.sendOk("The event could not be initialized, please report this on the forum.");
-                cm.dispose();
-                return;
-            }
-
-            em.setProperty("leader", player.getName());
-            em.setProperty("channel", player.getClient().getChannel());
-            if (!em.startInstance(expedition)) {
-                cm.sendOk("Another expedition has taken the initiative to challenge " + expedBoss + ", lets pray for those brave souls.");
-                cm.dispose();
-                return;
-            }
-
-            cm.dispose();
-
         } else if (status == 6) {
             if (selection > 0) {
                 var banned = expedMembers.get(selection - 1);

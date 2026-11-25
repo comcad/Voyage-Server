@@ -16,7 +16,9 @@ function start(mode, type, selection) {
         if (type == 1 && mode == 0) {
             status -= 2;
         } else {
-            qm.sendOk("You don't seem to follow instructions well. Come see me when you are ready.");
+            if (mode == 0) {
+                qm.sendOk("You don't seem to follow instructions well. Come see me when you are ready.");
+            }
             qm.dispose();
             return;
         }
@@ -42,7 +44,7 @@ function end(mode, type, selection) {
         }
     }
     if (status == 0) {
-        qm.sendOk("I have been keeping up on your fabulour work. I am aware that you have successfully created the #bKiller Mushroom Spores#k, which penetrates through the unpenetrable barrier of the forest. Congratulations!");
+        qm.sendNext("I have been keeping up on your fabulour work. I am aware that you have successfully created the #bKiller Mushroom Spores#k, which penetrates through the unpenetrable barrier of the forest. Congratulations!");
     } else if (status == 1) {
         qm.forceCompleteQuest();
         qm.gainExp(2500);

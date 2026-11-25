@@ -21,6 +21,7 @@ function action(mode, type, selection) {
 
         if (status == 0) {
             if (cm.getEventInstance().isEventCleared()) {
+                cm.warp(cm.getMapId() == 105100300 ? 105100301 : 105100401, 0);
                 cm.sendOk("Wow! You defeated the balrog.");
             } else if (cm.getPlayer().getMap().getCharacters().size() > 1) {
                 cm.sendYesNo("Are you really going to leave this battle and leave your fellow travelers to die?");

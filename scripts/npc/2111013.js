@@ -48,11 +48,9 @@ function action(mode, type, selection) {
         }
 
         if (status == 0) {
-            cm.sendOk("The hook behind the frame was unhooked, revealing a secret space within the frame. There inside, a silver pendant was found. After carefully removing the pendant, the frame was closed and placed back onto the table.");
-        }
-        else if (status == 1) {
             if (cm.canHold(4031697, 1)) {
                 cm.gainItem(4031697);
+                cm.sendOk("The hook behind the frame was unhooked, revealing a secret space within the frame. There inside, a silver pendant was found. After carefully removing the pendant, the frame was closed and placed back onto the table.");
             }
             else {
                 cm.sendNext("Your inventory is full, please make sure you have an ETC slot available.");

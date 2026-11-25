@@ -63,10 +63,11 @@ function action(mode, type, selection) {
         } else if (status == 2) {
             cm.sendAcceptDecline("I will give you a chance if you're ready.");
         } else if (status == 3) {
-            cm.sendOk("You will have to collect me #b30 #t4031013##k. Good luck.");
             cm.completeQuest(100009);
             cm.startQuest(100010);
             cm.gainItem(4031011, -1);
+            cm.warp(108000400, 0);
+            cm.sendOk("You will have to collect me #b30 #t4031013##k. Good luck.");
         } else if (status == 4) {
             cm.warp(108000400, 0);
             cm.dispose();
