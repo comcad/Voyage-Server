@@ -897,7 +897,7 @@ public class StatEffect implements Cloneable {
                             mob.setMp(mob.getMp() - absorbMp);
                             applyto.addMP(absorbMp);
                             applyto.sendPacket(PacketCreator.showOwnBuffEffect(sourceid, 1));
-                            applyto.getMap().broadcastMessage(applyto, PacketCreator.showBuffEffect(applyto.getId(), sourceid, 1), false);
+                            applyto.getMap().broadcastMessage(applyto, PacketCreator.showForeignSkillUse(applyto, sourceid, applyto.getSkillLevel(sourceid)), false);
                         }
                     }
                     break;
@@ -1328,7 +1328,7 @@ public class StatEffect implements Cloneable {
         }
         if (primary) {
             localDuration = alchemistModifyVal(applyfrom, localDuration, false);
-            applyto.getMap().broadcastMessage(applyto, PacketCreator.showBuffEffect(applyto.getId(), sourceid, 1, (byte) 3), false);
+            applyto.getMap().broadcastMessage(applyto, PacketCreator.showForeignSkillUse(applyto, sourceid, skill ? applyto.getSkillLevel(sourceid) : 0), false);
         }
         if (localstatups.size() > 0) {
             Packet buff = null;

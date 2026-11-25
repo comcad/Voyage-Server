@@ -3488,29 +3488,44 @@ public class PacketCreator {
         return p;
     }
 
+    /**
+     * SHOW_FOREIGN_EFFECT 2 (a party buff landed on them: the skill, then a byte the client reads and drops) or 5 (a
+     * skill's special art: the skill alone), as the client reads them. A skill used (1) is showForeignSkillUse.
+     */
     public static Packet showBuffEffect(int chrId, int skillId, int effectId) {
-        return showBuffEffect(chrId, skillId, effectId, (byte) 3);
-    }
-
-    public static Packet showBuffEffect(int chrId, int skillId, int effectId, byte direction) {
-        OutPacket p = OutPacket.create(SendOpcode.SHOW_FOREIGN_EFFECT);
-        p.writeInt(chrId);
-        p.writeByte(effectId); //buff level
-        p.writeInt(skillId);
-        p.writeByte(direction);
-        p.writeByte(1);
-        p.writeLong(0);
-        return p;
-    }
-
-    public static Packet showBuffEffect(int chrId, int skillId, int skillLv, int effectId, byte direction) {   // updated packet structure found thanks to Rien dev team
         OutPacket p = OutPacket.create(SendOpcode.SHOW_FOREIGN_EFFECT);
         p.writeInt(chrId);
         p.writeByte(effectId);
         p.writeInt(skillId);
-        p.writeByte(0);
-        p.writeByte(skillLv);
-        p.writeByte(direction);
+        if (effectId == 2) {
+            p.writeByte(1);
+        }
+        return p;
+    }
+
+    /**
+     * SHOW_FOREIGN_EFFECT 1, a skill used, as the client reads it: the skill, the user's level and the skill's level
+     * (the client picks a skill's level-dependent art by them).
+     */
+    public static Packet showForeignSkillUse(Character chr, int skillId, int skillLevel) {
+        OutPacket p = OutPacket.create(SendOpcode.SHOW_FOREIGN_EFFECT);
+        p.writeInt(chr.getId());
+        p.writeByte(1);
+        p.writeInt(skillId);
+        p.writeByte(chr.getLevel());
+        p.writeByte(skillLevel);
+        return p;
+    }
+
+    /** The same with the byte the client reads after it for Monster Magnet (the way it pulls), Berserk and Dragon Fury. */
+    public static Packet showForeignSkillUse(Character chr, int skillId, int skillLevel, byte extra) {
+        OutPacket p = OutPacket.create(SendOpcode.SHOW_FOREIGN_EFFECT);
+        p.writeInt(chr.getId());
+        p.writeByte(1);
+        p.writeInt(skillId);
+        p.writeByte(chr.getLevel());
+        p.writeByte(skillLevel);
+        p.writeByte(extra);
         return p;
     }
 

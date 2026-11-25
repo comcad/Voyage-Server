@@ -112,7 +112,7 @@ public final class SpecialMoveHandler extends AbstractPacketHandler {
                 }
             }
             byte direction = p.readByte();   // thanks MedicOP for pointing some 3rd-party related issues with Magnet
-            chr.getMap().broadcastMessage(chr, PacketCreator.showBuffEffect(chr.getId(), skillid, chr.getSkillLevel(skillid), 1, direction), false);
+            chr.getMap().broadcastMessage(chr, PacketCreator.showForeignSkillUse(chr, skillid, chr.getSkillLevel(skillid), direction), false);
             c.sendPacket(PacketCreator.enableActions());
             return;
         } else if (skillid == Brawler.MP_RECOVERY) {// MP Recovery
@@ -124,7 +124,7 @@ public final class SpecialMoveHandler extends AbstractPacketHandler {
             chr.addMP(gain);
         } else if (skillid == SuperGM.HEAL_PLUS_DISPEL) {
             p.skip(11);
-            chr.getMap().broadcastMessage(chr, PacketCreator.showBuffEffect(chr.getId(), skillid, chr.getSkillLevel(skillid)), false);
+            chr.getMap().broadcastMessage(chr, PacketCreator.showForeignSkillUse(chr, skillid, chr.getSkillLevel(skillid)), false);
         } else if (skillid % 10000000 == 1004) {
             p.readShort();
         }
@@ -138,7 +138,7 @@ public final class SpecialMoveHandler extends AbstractPacketHandler {
                     StatEffect used = skill.getEffect(skillLevel);
                     // the others see an instant skill's cast too (Teleport...); a buff's is shown as it's applied
                     if (used.applyTo(chr, pos) && !used.showsOwnCast() && skillid != SuperGM.HEAL_PLUS_DISPEL) {
-                        chr.getMap().broadcastMessage(chr, PacketCreator.showBuffEffect(chr.getId(), skillid, 1, (byte) 3), false);
+                        chr.getMap().broadcastMessage(chr, PacketCreator.showForeignSkillUse(chr, skillid, skillLevel), false);
                     }
                 } else {
                     skill.getEffect(skillLevel).applyEchoOfHero(chr);

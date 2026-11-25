@@ -1385,7 +1385,7 @@ public class MapleMap {
                     if (character.isAlive()) {
                         StatEffect statEffect = mii.getItemEffect(buff);
                         character.sendPacket(PacketCreator.showOwnBuffEffect(buff, 1));
-                        broadcastMessage(character, PacketCreator.showBuffEffect(character.getId(), buff, 1), false);
+                        broadcastMessage(character, PacketCreator.showForeignSkillUse(character, buff, 0), false);
                         statEffect.applyTo(character);
                     }
                 }
