@@ -2618,13 +2618,12 @@ public class PacketCreator {
 
     public static Packet damagePlayer(int skill, int monsteridfrom, int cid, int damage, int fake, int direction, boolean pgmr, int pgmr_1, boolean is_pg, int oid, int pos_x, int pos_y) {
         final OutPacket p = OutPacket.create(SendOpcode.DAMAGE_PLAYER);
+        // as the client reads it: who, the blow (-1 touch, 0 and up a monster's attack, -2 / -3 / -4 the map's own) and
+        // its damage; only a monster's blow (-1 and up) has the monster's part; then the damage shown
         p.writeInt(cid);
         p.writeByte(skill);
-        if (skill == -3) {
-            p.writeInt(0);
-        }
         p.writeInt(damage);
-        if (skill != -4) {
+        if (skill > -2) {
             p.writeInt(monsteridfrom);
             p.writeByte(direction);
             if (pgmr) {

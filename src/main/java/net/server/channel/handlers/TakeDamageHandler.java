@@ -77,7 +77,7 @@ public final class TakeDamageHandler extends AbstractPacketHandler {
         int mpattack = 0;
         Monster attacker = null;
         final MapleMap map = chr.getMap();
-        if (damagefrom != -3 && damagefrom != -4) {
+        if (damagefrom > -2) {   // a monster's blow (touch -1, attack 0 and up); the map's own (-2, -3, -4) has no monster part
             monsteridfrom = p.readInt();
             oid = p.readInt();
 
