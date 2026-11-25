@@ -66,7 +66,7 @@ public final class CashOperationHandler extends AbstractPacketHandler {
         CashShop cs = chr.getCashShop();
 
         if (!cs.isOpened()) {
-            c.sendPacket(PacketCreator.enableActions());
+            c.sendPacket(PacketCreator.showCash(chr));   // (the shop waits for a Cash Shop reply: STAT_CHANGED doesn't free it)
             return;
         }
 
@@ -174,6 +174,7 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                             c.sendPacket(PacketCreator.showCash(chr));
                         } else {
                             log.warn("Could not add {} slots of type {} for chr {}", qty, type, Character.makeMapleReadable(chr.getName()));
+                            c.sendPacket(PacketCreator.showCash(chr));
                         }
                     } else {
                         CashItem cItem = CashItemFactory.getItem(p.readInt());
@@ -193,6 +194,7 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                             c.sendPacket(PacketCreator.showCash(chr));
                         } else {
                             log.warn("Could not add {} slots of type {} for chr {}", qty, type, Character.makeMapleReadable(chr.getName()));
+                            c.sendPacket(PacketCreator.showCash(chr));
                         }
                     }
                 } else if (action == 0x07) { // Increase Storage Slots
@@ -218,6 +220,7 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                             c.sendPacket(PacketCreator.showCash(chr));
                         } else {
                             log.warn("Could not add {} slots to {}'s account.", qty, Character.makeMapleReadable(chr.getName()));
+                            c.sendPacket(PacketCreator.showCash(chr));
                         }
                     } else {
                         CashItem cItem = CashItemFactory.getItem(p.readInt());
@@ -240,6 +243,7 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                             c.sendPacket(PacketCreator.showCash(chr));
                         } else {
                             log.warn("Could not add {} slots to {}'s account", qty, Character.makeMapleReadable(chr.getName()));
+                            c.sendPacket(PacketCreator.showCash(chr));
                         }
                     }
                 } else if (action == 0x08) { // Increase Character Slots
@@ -262,6 +266,7 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                         c.sendPacket(PacketCreator.showCash(chr));
                     } else {
                         log.warn("Could not add a chr slot to {}'s account", Character.makeMapleReadable(chr.getName()));
+                        c.sendPacket(PacketCreator.showCash(chr));
                         c.enableCSActions();
                         return;
                     }
@@ -281,6 +286,8 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                                 chr.addPlayerRing(ring);
                             }
                         }
+                    } else {
+                        c.sendPacket(PacketCreator.showCashShopMessage((byte) 0xBB));   // "check if your inventory is full"
                     }
                 } else if (action == 0x0E) { // Put into Cash Inventory
                     int cashId = p.readInt();
@@ -318,7 +325,9 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                         String text = p.readString();
                         CashItem itemRing = CashItemFactory.getItem(SN);
                         Character partner = c.getChannelServer().getPlayerStorage().getCharacterByName(recipientName);
-                        if (partner == null) {
+                        if (!isWallet(toCharge) || !canBuy(chr, itemRing, cs.getCash(toCharge))) {
+                            c.sendPacket(PacketCreator.showCashShopMessage((byte) 0xA5));   // "You don't have enough cash."
+                        } else if (partner == null) {
                             chr.sendPacket(PacketCreator.serverNotice(1, "The partner you specified cannot be found.\r\nPlease make sure your partner is online and in the same channel."));
                         } else {
 
@@ -383,7 +392,9 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                         String sentTo = p.readString();
                         String text = p.readString();
                         Character partner = c.getChannelServer().getPlayerStorage().getCharacterByName(sentTo);
-                        if (partner == null) {
+                        if (!isWallet(payment) || !canBuy(chr, itemRing, cs.getCash(payment))) {
+                            c.sendPacket(PacketCreator.showCashShopMessage((byte) 0xA5));   // (a wallet chosen by the client made it free)
+                        } else if (partner == null) {
                             c.sendPacket(PacketCreator.showCashShopMessage((byte) 0xBE));
                         } else {
                             // Need to check to make sure its actually an equip and the right SN...
@@ -496,14 +507,29 @@ public final class CashOperationHandler extends AbstractPacketHandler {
                     if (receiver != null) {
                         noteService.show(receiver);
                     }
+                } else if (action == 0x1A) { // delete a Cash Inventory item: birthday, its cash serial (8 bytes)
+                    int birthday = p.readInt();
+                    long cashId = p.readLong();
+                    Item item = cs.findByCashId((int) cashId);
+                    if (!checkBirthday(c, birthday)) {
+                        c.sendPacket(PacketCreator.showCashShopMessage((byte) 0xC4));
+                    } else if (item == null) {
+                        c.sendPacket(PacketCreator.showCashShopMessage((byte) 0));
+                    } else {
+                        cs.removeFromInventory(item);
+                        c.sendPacket(PacketCreator.deleteCashItem(item));   // 0x6C, which frees the shop
+                    }
+                } else if (action == 0x09) { // an equip slot (555xxxx): not sold here, but the shop waits for an answer
+                    c.sendPacket(PacketCreator.showCashShopMessage((byte) 0));
                 } else {
                     log.warn("Unhandled action: {}, packet: {}", action, p);
+                    c.sendPacket(PacketCreator.showCash(chr));   // (the shop waits for a reply)
                 }
             } finally {
                 c.releaseClient();
             }
         } else {
-            c.sendPacket(PacketCreator.enableActions());
+            c.sendPacket(PacketCreator.showCash(chr));
         }
     }
 
@@ -515,6 +541,11 @@ public final class CashOperationHandler extends AbstractPacketHandler {
         cal.setTimeInMillis(0);
         cal.set(year, month - 1, day);
         return c.checkBirthDate(cal);
+    }
+
+    /** The three wallets the client charges: NX Credit (1), Maple Points (2), NX Prepaid (4). */
+    private static boolean isWallet(int wallet) {
+        return wallet == 1 || wallet == 2 || wallet == 4;
     }
 
     private static boolean canBuy(Character chr, CashItem item, int cash) {

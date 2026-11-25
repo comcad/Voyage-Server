@@ -274,6 +274,8 @@ public final class CouponCodeHandler extends AbstractPacketHandler {
             } finally {
                 c.releaseClient();
             }
+        } else {
+            c.sendPacket(PacketCreator.showCash(c.getPlayer()));   // the shop waits for a reply
         }
     }
 }
