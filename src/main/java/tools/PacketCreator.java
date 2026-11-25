@@ -7517,12 +7517,9 @@ public class PacketCreator {
     public static Packet spawnDragon(Dragon dragon) {
         OutPacket p = OutPacket.create(SendOpcode.SPAWN_DRAGON);
         p.writeInt(dragon.getOwner().getId());//objectid = owner id
-        p.writeShort(dragon.getPosition().x);
-        p.writeShort(0);
-        p.writeShort(dragon.getPosition().y);
-        p.writeShort(0);
+        p.writeInt(dragon.getPosition().x);   // as ints: the client reads I x, I y (a short and a 0 short broke a negative one)
+        p.writeInt(dragon.getPosition().y);
         p.writeByte(dragon.getStance());
-        p.writeByte(0);
         p.writeShort(dragon.getOwner().getJob().getId());
         return p;
     }
