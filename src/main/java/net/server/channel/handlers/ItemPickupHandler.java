@@ -28,6 +28,7 @@ import net.packet.InPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import server.maps.MapObject;
+import tools.PacketCreator;
 
 import java.awt.*;
 
@@ -46,7 +47,9 @@ public final class ItemPickupHandler extends AbstractPacketHandler {
         int oid = p.readInt();
         Character chr = c.getPlayer();
         MapObject ob = chr.getMap().getMapObject(oid);
+        // (a reply on every refusal: the client stays locked until one comes)
         if (ob == null) {
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
 
@@ -55,6 +58,7 @@ public final class ItemPickupHandler extends AbstractPacketHandler {
         if (Math.abs(charPos.getX() - obPos.getX()) > 800 || Math.abs(charPos.getY() - obPos.getY()) > 600) {
             log.warn("Chr {} tried to pick up an item too far away. Mapid: {}, player pos: {}, object pos: {}",
                     c.getPlayer().getName(), chr.getMapId(), charPos, obPos);
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
 

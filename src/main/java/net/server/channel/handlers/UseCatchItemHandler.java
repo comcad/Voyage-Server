@@ -51,10 +51,13 @@ public final class UseCatchItemHandler extends AbstractPacketHandler {
         int monsterid = p.readInt();
 
         Monster mob = chr.getMap().getMonsterByOid(monsterid);
+        // (a reply on every refusal: the client stays locked until one comes)
         if (chr.getInventory(ItemConstants.getInventoryType(itemId)).countById(itemId) <= 0) {
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
         if (mob == null) {
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
         switch (itemId) {
@@ -80,8 +83,8 @@ public final class UseCatchItemHandler extends AbstractPacketHandler {
                             c.sendPacket(PacketCreator.catchMessage(0));
                         }
                     }
-                    c.sendPacket(PacketCreator.enableActions());
                 }
+                c.sendPacket(PacketCreator.enableActions());
                 break;
             case ItemId.ARPQ_ELEMENT_ROCK:
                 if (mob.getId() == MobId.ARPQ_SCORPION) {
@@ -106,8 +109,8 @@ public final class UseCatchItemHandler extends AbstractPacketHandler {
                             c.sendPacket(PacketCreator.catchMessage(0));
                         }
                     }
-                    c.sendPacket(PacketCreator.enableActions());
                 }
+                c.sendPacket(PacketCreator.enableActions());
                 break;
             case ItemId.MAGIC_CANE:
                 if (mob.getId() == MobId.LOST_RUDOLPH) {
@@ -185,8 +188,8 @@ public final class UseCatchItemHandler extends AbstractPacketHandler {
                     } else {
                         chr.message("You cannot use the Fishing Net yet.");
                     }
-                    c.sendPacket(PacketCreator.enableActions());
                 }
+                c.sendPacket(PacketCreator.enableActions());
                 break;
             default:
                 // proper Fish catch, thanks to Dragohe4rt

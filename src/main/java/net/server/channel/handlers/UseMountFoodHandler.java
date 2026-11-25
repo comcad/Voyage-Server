@@ -74,6 +74,9 @@ public final class UseMountFoodHandler extends AbstractPacketHandler {
                         }
 
                         InventoryManipulator.removeById(c, InventoryType.USE, itemid, 1, true, false);
+                    } else {
+                        // (a reply on every refusal: the client stays locked until one comes)
+                        c.sendPacket(PacketCreator.enableActions());
                     }
                 } finally {
                     useInv.unlockInventory();
@@ -85,6 +88,8 @@ public final class UseMountFoodHandler extends AbstractPacketHandler {
             } finally {
                 c.releaseClient();
             }
+        } else {
+            c.sendPacket(PacketCreator.enableActions());
         }
     }
 }

@@ -486,16 +486,20 @@ public class InventoryManipulator {
     public static void move(Client c, InventoryType type, short src, short dst) {
         Inventory inv = c.getPlayer().getInventory(type);
 
+        // (a reply on every refusal: the client stays locked until one comes)
         if (src < 0 || dst < 0) {
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
         if (dst > inv.getSlotLimit()) {
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
         ItemInformationProvider ii = ItemInformationProvider.getInstance();
         Item source = inv.getItem(src);
         Item initialTarget = inv.getItem(dst);
         if (source == null) {
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
         short olddstQ = -1;
@@ -533,6 +537,7 @@ public class InventoryManipulator {
             return;
         } else if ((ItemId.isExplorerMount(source.getItemId()) && chr.isCygnus()) ||
                 ((ItemId.isCygnusMount(source.getItemId())) && !chr.isCygnus())) {// Adventurer taming equipment
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
         boolean itemChanged = false;
@@ -651,9 +656,11 @@ public class InventoryManipulator {
         Equip source = (Equip) eqpdInv.getItem(src);
         Equip target = (Equip) eqpInv.getItem(dst);
         if (dst < 0) {
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
         if (source == null) {
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
         if (target != null && src <= 0) {
@@ -711,19 +718,27 @@ public class InventoryManipulator {
         Inventory inv = chr.getInventory(type);
         Item source = inv.getItem(src);
 
-        if (chr.isGM() && chr.gmLevel() < YamlConfig.config.server.MINIMUM_GM_LEVEL_TO_DROP) {
-            chr.message("You cannot drop items at your GM level.");
-            log.info("GM %s tried to drop item id %d", chr.getName(), source.getItemId());
+        if (source == null) {   // checked first: the GM-level block below reads the source item
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
 
-        if (chr.getTrade() != null || chr.getMiniGame() != null || source == null) { //Only check needed would prob be merchants (to see if the player is in one)
+        if (chr.isGM() && chr.gmLevel() < YamlConfig.config.server.MINIMUM_GM_LEVEL_TO_DROP) {
+            chr.message("You cannot drop items at your GM level.");
+            log.info("GM %s tried to drop item id %d", chr.getName(), source.getItemId());
+            c.sendPacket(PacketCreator.enableActions());
+            return;
+        }
+
+        if (chr.getTrade() != null || chr.getMiniGame() != null) { //Only check needed would prob be merchants (to see if the player is in one)
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
         int itemId = source.getItemId();
 
         MapleMap map = chr.getMap();
         if ((!ItemConstants.isRechargeable(itemId) && source.getQuantity() < quantity) || quantity < 0) {
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
 

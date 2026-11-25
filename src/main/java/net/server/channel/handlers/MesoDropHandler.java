@@ -43,8 +43,10 @@ public final class MesoDropHandler extends AbstractPacketHandler {
         p.skip(4);
         int meso = p.readInt();
 
+        // (a reply on every refusal: the client stays locked until one comes)
         if (player.isGM() && player.gmLevel() < YamlConfig.config.server.MINIMUM_GM_LEVEL_TO_DROP) {
             player.message("You cannot drop mesos at your GM level.");
+            c.sendPacket(PacketCreator.enableActions());
             return;
         }
 

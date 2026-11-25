@@ -74,6 +74,8 @@ public final class UseItemHandler extends AbstractPacketHandler {
             } else if (ItemConstants.isTownScroll(itemId)) {
                 if (ii.getItemEffect(toUse.getItemId()).applyTo(chr)) {
                     remove(c, slot);
+                } else {
+                    c.sendPacket(PacketCreator.enableActions());
                 }
                 return;
             }
@@ -88,6 +90,9 @@ public final class UseItemHandler extends AbstractPacketHandler {
                     mse.applyTo(player);
                 }
             }
+        } else {
+            // (a reply on every refusal: the client stays locked until one comes)
+            c.sendPacket(PacketCreator.enableActions());
         }
     }
 

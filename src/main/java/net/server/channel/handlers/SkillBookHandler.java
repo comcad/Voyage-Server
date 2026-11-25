@@ -58,11 +58,14 @@ public final class SkillBookHandler extends AbstractPacketHandler {
             try {
                 Inventory inv = c.getPlayer().getInventory(InventoryType.USE);
                 Item toUse = inv.getItem(slot);
+                // (a reply on every refusal: the client stays locked until one comes)
                 if (toUse == null || toUse.getItemId() != itemId) {
+                    c.sendPacket(PacketCreator.enableActions());
                     return;
                 }
                 Map<String, Integer> skilldata = ItemInformationProvider.getInstance().getSkillStats(toUse.getItemId(), c.getPlayer().getJob().getId());
                 if (skilldata == null) {
+                    c.sendPacket(PacketCreator.enableActions());
                     return;
                 }
                 Skill skill2 = SkillFactory.getSkill(skilldata.get("skillid"));
@@ -73,6 +76,7 @@ public final class SkillBookHandler extends AbstractPacketHandler {
                     try {
                         Item used = inv.getItem(slot);
                         if (used != toUse || toUse.getQuantity() < 1) {    // thanks ClouD for noticing skillbooks not being usable when stacked
+                            c.sendPacket(PacketCreator.enableActions());
                             return;
                         }
 
