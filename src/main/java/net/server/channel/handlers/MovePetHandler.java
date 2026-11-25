@@ -33,9 +33,10 @@ import java.util.List;
 public final class MovePetHandler extends AbstractMovementPacketHandler {
     @Override
     public final void handlePacket(InPacket p, Client c) {
-        int petId = p.readInt();
-        p.readLong();
-//        Point startPos = StreamUtil.readShortPoint(slea);
+        // as the client sends it: the pet's serial (8 bytes; its id the low half), where the path starts, the path
+        int petId = (int) p.readLong();
+        short startX = p.readShort(), startY = p.readShort();
+        int movementDataStart = p.getPosition();
         List<LifeMovementFragment> res;
 
         try {
@@ -43,12 +44,14 @@ public final class MovePetHandler extends AbstractMovementPacketHandler {
         } catch (EmptyMovementException e) {
             return;
         }
+        long movementDataLength = p.getPosition() - movementDataStart;
+        p.seek(movementDataStart);
         Character player = c.getPlayer();
         byte slot = player.getPetIndex(petId);
         if (slot == -1) {
             return;
         }
         player.getPet(slot).updatePosition(res);
-        player.getMap().broadcastMessage(player, PacketCreator.movePet(player.getId(), petId, slot, res), false);
+        player.getMap().broadcastMessage(player, PacketCreator.movePet(player.getId(), slot, startX, startY, p, movementDataLength), false);
     }
 }

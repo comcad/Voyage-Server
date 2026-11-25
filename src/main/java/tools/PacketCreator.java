@@ -2271,10 +2271,12 @@ public class PacketCreator {
         }
     }
 
-    public static Packet movePlayer(int chrId, InPacket movementPacket, long movementDataLength) {
+    /** MOVE_PLAYER as the client reads it: who, the path's start (its relative steps go from there), then the path. */
+    public static Packet movePlayer(int chrId, short startX, short startY, InPacket movementPacket, long movementDataLength) {
         OutPacket p = OutPacket.create(SendOpcode.MOVE_PLAYER);
         p.writeInt(chrId);
-        p.writeInt(0);
+        p.writeShort(startX);
+        p.writeShort(startY);
         rebroadcastMovementList(p, movementPacket, movementDataLength);
         return p;
     }
@@ -4679,12 +4681,14 @@ public class PacketCreator {
         return p;
     }
 
-    public static Packet movePet(int cid, int pid, byte slot, List<LifeMovementFragment> moves) {
+    /** MOVE_PET as the client reads it: the owner, the pet's slot, the path's start, then the path as the client sent it. */
+    public static Packet movePet(int cid, byte slot, short startX, short startY, InPacket movementPacket, long movementDataLength) {
         final OutPacket p = OutPacket.create(SendOpcode.MOVE_PET);
         p.writeInt(cid);
         p.writeByte(slot);
-        p.writeInt(pid);
-        serializeMovementList(p, moves);
+        p.writeShort(startX);
+        p.writeShort(startY);
+        rebroadcastMovementList(p, movementPacket, movementDataLength);
         return p;
     }
 

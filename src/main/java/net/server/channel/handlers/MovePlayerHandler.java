@@ -29,7 +29,8 @@ import tools.exceptions.EmptyMovementException;
 public final class MovePlayerHandler extends AbstractMovementPacketHandler {
     @Override
     public final void handlePacket(InPacket p, Client c) {
-        p.skip(9);
+        p.skip(5);   // the field key, the crc
+        short startX = p.readShort(), startY = p.readShort();   // where the path starts: the others are told it too
         try {   // thanks Sa for noticing empty movement sequences crashing players
             int movementDataStart = p.getPosition();
             updatePosition(p, c.getPlayer(), 0);
@@ -38,9 +39,9 @@ public final class MovePlayerHandler extends AbstractMovementPacketHandler {
 
             c.getPlayer().getMap().movePlayer(c.getPlayer(), c.getPlayer().getPosition());
             if (c.getPlayer().isHidden()) {
-                c.getPlayer().getMap().broadcastGMMessage(c.getPlayer(), PacketCreator.movePlayer(c.getPlayer().getId(), p, movementDataLength), false);
+                c.getPlayer().getMap().broadcastGMMessage(c.getPlayer(), PacketCreator.movePlayer(c.getPlayer().getId(), startX, startY, p, movementDataLength), false);
             } else {
-                c.getPlayer().getMap().broadcastMessage(c.getPlayer(), PacketCreator.movePlayer(c.getPlayer().getId(), p, movementDataLength), false);
+                c.getPlayer().getMap().broadcastMessage(c.getPlayer(), PacketCreator.movePlayer(c.getPlayer().getId(), startX, startY, p, movementDataLength), false);
             }
         } catch (EmptyMovementException e) {
         }
