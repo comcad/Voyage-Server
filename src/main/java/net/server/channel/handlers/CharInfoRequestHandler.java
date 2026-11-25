@@ -42,7 +42,9 @@ public final class CharInfoRequestHandler extends AbstractPacketHandler {
                     player.exportExcludedItems(c);
                 }
                 c.sendPacket(PacketCreator.charInfo(player));
+                return;
             }
         }
+        c.sendPacket(PacketCreator.enableActions());   // (gone: the client waits for a reply)
     }
 }

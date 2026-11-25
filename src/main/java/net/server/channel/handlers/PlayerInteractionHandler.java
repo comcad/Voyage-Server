@@ -327,12 +327,17 @@ public final class PlayerInteractionHandler extends AbstractPacketHandler {
                 int otherCid = p.readInt();
                 Character other = chr.getMap().getCharacterById(otherCid);
                 if (other == null || chr.getId() == other.getId() || chr.getTrade() == null) {
+                    if (chr.getTrade() != null) {
+                        chr.sendPacket(PacketCreator.miniRoomInviteResult(1, ""));   // unable to find the character
+                    }
                     return;
                 }
 
                 Trade.inviteTrade(chr, other);
             } else if (mode == Action.DECLINE.getCode()) {
-                Trade.declineTrade(chr);
+                p.readInt();   // the invitation's serial
+                int reason = p.available() > 0 ? p.readByte() : 3;   // 3 declined, 4 not accepting invitations
+                Trade.declineTrade(chr, reason);
             } else if (mode == Action.VISIT.getCode()) {
                 if (chr.getTrade() != null && chr.getTrade().getPartner() != null) {
                     if (chr.getTrade().isCash() && !chr.getTrade().isFullTrade() && !cashTradeCleared(chr)) {

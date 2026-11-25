@@ -36,11 +36,15 @@ public final class GiveFameHandler extends AbstractPacketHandler {
 
     @Override
     public void handlePacket(InPacket p, Client c) {
-        Character target = (Character) c.getPlayer().getMap().getMapObject(p.readInt());
+        Character target = c.getPlayer().getMap().getMapObject(p.readInt()) instanceof Character chr ? chr : null;
         int mode = p.readByte();
         int famechange = 2 * mode - 1;
         Character player = c.getPlayer();
-        if (target == null || target.getId() == player.getId() || player.getLevel() < 15) {
+        if (target == null || target.getId() == player.getId()) {
+            c.sendPacket(PacketCreator.giveFameErrorResponse(1));   // "The user name is incorrectly entered."
+            return;
+        } else if (player.getLevel() < 15) {
+            c.sendPacket(PacketCreator.giveFameErrorResponse(2));   // "Users under level 15 are unable to toggle with fame."
             return;
         } else if (famechange != 1 && famechange != -1) {
             AutobanFactory.PACKET_EDIT.alert(c.getPlayer(), c.getPlayer().getName() + " tried to packet edit fame.");

@@ -3448,19 +3448,7 @@ public class PacketCreator {
         p.writeByte(4);
         p.writeByte(4);
         p.writeByte(owner ? 0 : 1);
-
-        if (owner) {
-            List<PlayerShop.SoldItem> sold = shop.getSold();
-            p.writeByte(sold.size());
-            for (PlayerShop.SoldItem s : sold) {
-                p.writeInt(s.getItemId());
-                p.writeShort(s.getQuantity());
-                p.writeInt(s.getMesos());
-                p.writeString(s.getBuyer());
-            }
-        } else {
-            p.writeByte(0);
-        }
+        p.writeByte(0);   // the owner's seat, then the owner (the client reads no sold list in a player shop's room)
 
         addCharLook(p, shop.getOwner(), false);
         p.writeString(shop.getOwner().getName());
@@ -7131,6 +7119,18 @@ public class PacketCreator {
         p.writeInt(damage);
         p.writeInt(remainingHp);
         p.writeInt(mob.getMaxHp());
+        return p;
+    }
+
+    /**
+     * An invitation's answer (PLAYER_INTERACTION 3), shown as a chat line while the inviter's room stays open: 1 unable to
+     * find the character, 2 '%s' is doing something else, 3 '%s' denied it, 4 '%s' isn't accepting any invitation.
+     */
+    public static Packet miniRoomInviteResult(int code, String name) {
+        final OutPacket p = OutPacket.create(SendOpcode.PLAYER_INTERACTION);
+        p.writeByte(3);
+        p.writeByte(code);
+        p.writeString(name);
         return p;
     }
 

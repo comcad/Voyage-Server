@@ -370,7 +370,7 @@ public class PlayerShop extends AbstractMapObject {
             try {
                 for (int i = 0; i < 3; i++) {
                     if (visitors[i] != null) {
-                        visitors[i].sendPacket(PacketCreator.shopErrorMessage(10, 1));
+                        visitors[i].sendPacket(PacketCreator.shopErrorMessage(3, i + 1));   // their own seat; 3: the shop is closed
                         visitorList.add(visitors[i]);
                     }
                 }
@@ -507,11 +507,13 @@ public class PlayerShop extends AbstractMapObject {
         }
 
         Character target = null;
+        int targetSeat = 1;
         visitorLock.lock();
         try {
             for (int i = 0; i < 3; i++) {
                 if (visitors[i] != null && visitors[i].getName().equals(name)) {
                     target = visitors[i];
+                    targetSeat = i + 1;
                     break;
                 }
             }
@@ -520,7 +522,7 @@ public class PlayerShop extends AbstractMapObject {
         }
 
         if (target != null) {
-            target.sendPacket(PacketCreator.shopErrorMessage(5, 1));
+            target.sendPacket(PacketCreator.shopErrorMessage(5, targetSeat));   // their own seat, as the client reads it
             removeVisitor(target);
         }
     }

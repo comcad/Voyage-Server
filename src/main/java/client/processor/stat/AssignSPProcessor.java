@@ -96,6 +96,8 @@ public class AssignSPProcessor {
                 } else {
                     player.changeSkillLevel(skill, (byte) (curLevel + 1), player.getMasterLevel(skill), player.getSkillExpiration(skill));
                 }
+            } else {
+                player.sendPacket(PacketCreator.enableActions());   // no SP or already maxed: the client waits for a reply
             }
         } finally {
             c.unlockClient();

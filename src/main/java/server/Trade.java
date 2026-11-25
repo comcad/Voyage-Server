@@ -513,13 +513,11 @@ public class Trade {
                 c1.sendPacket(PacketCreator.getTradeStart(c1.getClient(), c1.getTrade(), (byte) 0));
                 c2.sendPacket(PacketCreator.tradeInvite(c1));
             } else {
-                c1.message("The other player is already trading with someone else.");
-                cancelTrade(c1, TradeResult.NO_RESPONSE);
+                c1.sendPacket(PacketCreator.miniRoomInviteResult(2, c2.getName()));   // doing something else; the room stays
                 InviteCoordinator.answerInvite(InviteType.TRADE, c2.getId(), c1.getId(), false);
             }
         } else {
-            c1.message("The other player is already managing someone else's trade invitation.");
-            cancelTrade(c1, TradeResult.NO_RESPONSE);
+            c1.sendPacket(PacketCreator.miniRoomInviteResult(2, c2.getName()));
         }
     }
 
@@ -543,17 +541,21 @@ public class Trade {
     }
 
     public static void declineTrade(Character chr) {
+        declineTrade(chr, 3);
+    }
+
+    /** reason: 3 declined, 4 not accepting invitations (the client's own refusal). The inviter's room stays open. */
+    public static void declineTrade(Character chr, int reason) {
         Trade trade = chr.getTrade();
         if (trade != null) {
             if (trade.getPartner() != null) {
                 Character other = trade.getPartner().getChr();
                 if (InviteCoordinator.answerInvite(InviteType.TRADE, chr.getId(), other.getId(), false).result == InviteResultType.DENIED) {
-                    other.message(chr.getName() + " has declined your trade request.");
+                    other.sendPacket(PacketCreator.miniRoomInviteResult(reason == 4 ? 4 : 3, chr.getName()));
                 }
-
-                other.getTrade().cancel(TradeResult.PARTNER_CANCEL.getValue());
-                other.setTrade(null);
-
+                if (other.getTrade() != null) {
+                    other.getTrade().setPartner(null);   // the inviter's room stays open, free to invite again
+                }
             }
             trade.cancel(TradeResult.NO_RESPONSE.getValue());
             chr.setTrade(null);

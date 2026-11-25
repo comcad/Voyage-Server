@@ -57,6 +57,7 @@ public class AssignAPProcessor {
     public static void APAutoAssignAction(InPacket inPacket, Client c) {
         Character chr = c.getPlayer();
         if (chr.getRemainingAp() < 1) {
+            c.sendPacket(PacketCreator.enableActions());   // the client waits for a reply
             return;
         }
 
@@ -72,7 +73,8 @@ public class AssignAPProcessor {
             statGain[3] = 0;
 
             int remainingAp = chr.getRemainingAp();
-            inPacket.skip(8);
+            inPacket.skip(4);   // tick
+            int pairs = inPacket.readInt();   // how many (stat, amount) pairs follow
 
             if (YamlConfig.config.server.USE_SERVER_AUTOASSIGNER) {
                 // --------- Ronan Lana's AUTOASSIGNER ---------
@@ -392,17 +394,20 @@ public class AssignAPProcessor {
 
                 c.sendPacket(PacketCreator.serverNotice(1, "Better AP applications detected:\r\nSTR: +" + statGain[0] + "\r\nDEX: +" + statGain[1] + "\r\nINT: +" + statGain[3] + "\r\nLUK: +" + statGain[2]));
             } else {
-                if (inPacket.available() < 16) {
+                if (pairs < 0 || pairs > 4 || inPacket.available() < 8L * pairs) {
                     AutobanFactory.PACKET_EDIT.alert(chr, "Didn't send full packet for Auto Assign.");
 
                     c.disconnect(true, false);
                     return;
                 }
 
-                for (int i = 0; i < 2; i++) {
+                int total = 0;
+                for (int i = 0; i < pairs; i++) {
                     int type = inPacket.readInt();
                     int tempVal = inPacket.readInt();
-                    if (tempVal < 0 || tempVal > remainingAp) {
+                    total += tempVal;
+                    if (tempVal < 0 || total > remainingAp) {
+                        c.sendPacket(PacketCreator.enableActions());
                         return;
                     }
 
