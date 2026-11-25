@@ -4826,10 +4826,11 @@ public class PacketCreator {
         return p;
     }
 
-    public static Packet skillBookResult(Character chr, int skillid, int maxlevel, boolean canuse, boolean success) {
+    /** As the client reads it: who, then 0 a Skill Book (228xxxx) or 1 a Mastery Book (229xxxx), which picks its texts. */
+    public static Packet skillBookResult(Character chr, int itemId, int skillid, int maxlevel, boolean canuse, boolean success) {
         final OutPacket p = OutPacket.create(SendOpcode.SKILL_LEARN_ITEM_RESULT);
         p.writeInt(chr.getId());
-        p.writeByte(1);
+        p.writeByte(itemId / 10000 == 229 ? 1 : 0);
         p.writeInt(skillid);
         p.writeInt(maxlevel);
         p.writeByte(canuse ? 1 : 0);
@@ -5843,9 +5844,10 @@ public class PacketCreator {
         return p;
     }
 
+    /** As the client reads it: 0 done; otherwise a code then 0 (its "unknown error"; non-zero would be a reason text). */
     public static Packet showNameChangeCancel(boolean success) {
         OutPacket p = OutPacket.create(SendOpcode.CANCEL_NAME_CHANGE_RESULT);
-        p.writeBool(success);
+        p.writeByte(success ? 0 : 1);
         if (!success) {
             p.writeByte(0);
         }
@@ -5853,13 +5855,29 @@ public class PacketCreator {
         return p;
     }
 
+    /** As the client reads it: 0 done; otherwise a code then 0 (its "unknown error"). */
     public static Packet showWorldTransferCancel(boolean success) {
         OutPacket p = OutPacket.create(SendOpcode.CANCEL_TRANSFER_WORLD_RESULT);
-        p.writeBool(success);
+        p.writeByte(success ? 0 : 2);
         if (!success) {
             p.writeByte(0);
         }
         //p.writeString("Custom message."); //only if ^ != 0
+        return p;
+    }
+
+    /** PLAY_JUKEBOX: the jukebox item (the client shows its message and plays its song) and who played it. */
+    public static Packet playJukebox(int itemId, String name) {
+        OutPacket p = OutPacket.create(SendOpcode.PLAY_JUKEBOX);
+        p.writeInt(itemId);
+        p.writeString(name);
+        return p;
+    }
+
+    /** 0xD1: "You have used the meso bag to receive %d mesos." (the opcode's name here says otherwise; 0xD2 is the failure). */
+    public static Packet mesoBagUsed(int meso) {
+        OutPacket p = OutPacket.create(SendOpcode.LUCKSACK_FAIL);
+        p.writeInt(meso);
         return p;
     }
 

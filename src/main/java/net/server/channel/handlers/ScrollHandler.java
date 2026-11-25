@@ -56,6 +56,8 @@ public final class ScrollHandler extends AbstractPacketHandler {
                 short scrollSlot = p.readShort();
                 short equipSlot = p.readShort();
                 byte ws = (byte) p.readShort();
+                // then whether it's through Legendary Spirit (scrolling an equip in the Equip tab), as the client sends it
+                boolean spiritFlag = p.available() > 0 && p.readByte() != 0;
                 boolean whiteScroll = false; // white scroll being used?
                 boolean legendarySpirit = false; // legendary spirit skill
                 if ((ws & 2) == 2) {
@@ -65,10 +67,15 @@ public final class ScrollHandler extends AbstractPacketHandler {
                 ItemInformationProvider ii = ItemInformationProvider.getInstance();
                 Character chr = c.getPlayer();
                 Equip toScroll = (Equip) chr.getInventory(InventoryType.EQUIPPED).getItem(equipSlot);
-                Skill LegendarySpirit = SkillFactory.getSkill(1003);
-                if (chr.getSkillLevel(LegendarySpirit) > 0 && equipSlot >= 0) {
+                // Legendary Spirit: the Explorer's (1003), the Cygnus' (10001003) and the Aran's (20001003)
+                boolean hasSpirit = chr.getSkillLevel(1003) > 0 || chr.getSkillLevel(10001003) > 0 || chr.getSkillLevel(20001003) > 0;
+                if ((spiritFlag || equipSlot >= 0) && hasSpirit && equipSlot >= 0) {
                     legendarySpirit = true;
                     toScroll = (Equip) chr.getInventory(InventoryType.EQUIP).getItem(equipSlot);
+                }
+                if (toScroll == null) {   // nothing there to scroll: a reply, or the client stays locked
+                    c.sendPacket(PacketCreator.enableActions());
+                    return;
                 }
                 byte oldLevel = toScroll.getLevel();
                 byte oldSlots = toScroll.getUpgradeSlots();

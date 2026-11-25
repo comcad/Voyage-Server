@@ -354,7 +354,8 @@ public final class UseCashItemHandler extends AbstractPacketHandler {
                 c.sendPacket(new SendNoteSuccessPacket());
             }
         } else if (itemType == 510) {
-            player.getMap().broadcastMessage(PacketCreator.musicChange("Jukebox/Congratulation"));
+            // PLAY_JUKEBOX, as the client reads it: the jukebox (its message and song) and who played it
+            player.getMap().broadcastMessage(PacketCreator.playJukebox(itemId, player.getName()));
             remove(c, position, itemId);
         } else if (itemType == 512) {
             if (ii.getStateChangeItem(itemId) != 0) {
@@ -383,8 +384,10 @@ public final class UseCashItemHandler extends AbstractPacketHandler {
             c.sendPacket(PacketCreator.enableActions());
             remove(c, position, itemId);
         } else if (itemType == 520) {
-            player.gainMeso(ii.getMeso(itemId), true, false, true);
+            int meso = ii.getMeso(itemId);
+            player.gainMeso(meso, false, false, false);
             remove(c, position, itemId);
+            c.sendPacket(PacketCreator.mesoBagUsed(meso));   // the client's popup for it, not a chat line
             c.sendPacket(PacketCreator.enableActions());
         } else if (itemType == 523) {
             int itemid = p.readInt();
