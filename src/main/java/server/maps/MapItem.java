@@ -121,7 +121,8 @@ public class MapItem extends AbstractMapObject {
     }
 
     public final boolean hasClientsideOwnership(Character player) {
-        return this.character_ownerid == player.getId() || this.party_ownerid == player.getPartyId() || hasExpiredOwnershipTime();
+        // (a party's only when there is one: two players with none both have -1)
+        return this.character_ownerid == player.getId() || (this.party_ownerid != -1 && this.party_ownerid == player.getPartyId()) || hasExpiredOwnershipTime();
     }
 
     public final boolean isFFADrop() {

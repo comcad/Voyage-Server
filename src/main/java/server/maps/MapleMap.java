@@ -1105,6 +1105,7 @@ public class MapleMap {
     public final void disappearingItemDrop(final MapObject dropper, final Character owner, final Item item, final Point pos) {
         final Point droppos = calcDropPos(pos, pos);
         final MapItem mdrop = new MapItem(item, droppos, dropper, owner, owner.getClient(), (byte) 1, false);
+        mdrop.setObjectId(getUsableOID());   // its own id (never added to the map): with 0 the client showed only the first
 
         mdrop.lockItem();
         try {
@@ -1117,6 +1118,7 @@ public class MapleMap {
     public final void disappearingMesoDrop(final int meso, final MapObject dropper, final Character owner, final Point pos) {
         final Point droppos = calcDropPos(pos, pos);
         final MapItem mdrop = new MapItem(meso, droppos, dropper, owner, owner.getClient(), (byte) 1, false);
+        mdrop.setObjectId(getUsableOID());   // its own id (never added to the map): with 0 the client showed only the first
 
         mdrop.lockItem();
         try {

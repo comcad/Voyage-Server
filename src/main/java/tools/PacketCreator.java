@@ -1738,7 +1738,9 @@ public class PacketCreator {
             p.writeByte(5);
         }
         p.writeInt(gain);
-        p.writeShort(0);
+        if (!inChat) {
+            p.writeShort(0);   // the Internet Cafe bonus (the chat line, mode 5, is the amount alone)
+        }
         return p;
     }
 
@@ -1773,9 +1775,7 @@ public class PacketCreator {
             p = OutPacket.create(SendOpcode.SHOW_STATUS_INFO);
             p.writeShort(0);
             p.writeInt(itemId);
-            p.writeInt(quantity);
-            p.writeInt(0);
-            p.writeInt(0);
+            p.writeInt(quantity);   // (the client reads nothing more)
         }
         return p;
     }
@@ -3092,11 +3092,15 @@ public class PacketCreator {
             p.writeByte(1);
             p.writeString(iqs.getProgressData());
         } else {
+            // as the client reads a quest record: started (1) its progress text, completed (2) when (8 bytes), else nothing
             p.writeShort(qs.getQuest().getId());
             p.writeByte(qs.getStatus().getId());
-            p.writeString(qs.getProgressData());
+            if (qs.getStatus().getId() == 1) {
+                p.writeString(qs.getProgressData());
+            } else if (qs.getStatus().getId() == 2) {
+                p.writeLong(getTime(qs.getCompletionTime()));
+            }
         }
-        p.skip(5);
         return p;
     }
 
@@ -3779,9 +3783,7 @@ public class PacketCreator {
     public static Packet getShowInventoryStatus(int mode) {
         OutPacket p = OutPacket.create(SendOpcode.SHOW_STATUS_INFO);
         p.writeByte(0);
-        p.writeByte(mode);
-        p.writeInt(0);
-        p.writeInt(0);
+        p.writeByte(mode);   // (0xFF, 0xFE, 0xFD: the client reads nothing more)
         return p;
     }
 
