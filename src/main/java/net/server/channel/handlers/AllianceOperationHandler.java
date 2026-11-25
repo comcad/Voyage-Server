@@ -64,7 +64,7 @@ public final class AllianceOperationHandler extends AbstractPacketHandler {
                 return;
             }
 
-            if (chr.getMGC().getAllianceRank() > 2 || !alliance.getGuilds().contains(chr.getGuildId())) {
+            if ((b != 0x01 && chr.getMGC().getAllianceRank() > 2) || !alliance.getGuilds().contains(chr.getGuildId())) {
                 c.sendPacket(PacketCreator.enableActions());
                 return;
             }
@@ -73,7 +73,9 @@ public final class AllianceOperationHandler extends AbstractPacketHandler {
         // "alliance" is only null at case 0x04
         switch (b) {
             case 0x01:
-                Server.getInstance().allianceMessage(alliance.getId(), GuildPackets.sendShowInfo(chr.getGuild().getAllianceId(), chr.getId()), -1, -1);
+                // the client asks for its alliance's data (after a guild info with an alliance): it reads 0x0F, then the notice
+                c.sendPacket(GuildPackets.updateAllianceInfo(alliance, c.getWorld()));
+                c.sendPacket(GuildPackets.allianceNotice(alliance.getId(), alliance.getNotice()));
                 break;
             case 0x02: { // Leave Alliance
                 if (chr.getGuild().getAllianceId() == 0 || chr.getGuildId() < 1 || chr.getGuildRank() != 1) {
@@ -143,7 +145,7 @@ public final class AllianceOperationHandler extends AbstractPacketHandler {
                     return;
                 }
 
-                Server.getInstance().allianceMessage(alliance.getId(), GuildPackets.removeGuildFromAlliance(alliance, guildid, c.getWorld()), -1, -1);
+                Server.getInstance().allianceMessage(alliance.getId(), GuildPackets.removeGuildFromAlliance(alliance, guildid, c.getWorld(), true), -1, -1);
                 Server.getInstance().removeGuildFromAlliance(alliance.getId(), guildid);
 
                 Server.getInstance().allianceMessage(alliance.getId(), GuildPackets.getGuildAlliances(alliance, c.getWorld()), -1, -1);

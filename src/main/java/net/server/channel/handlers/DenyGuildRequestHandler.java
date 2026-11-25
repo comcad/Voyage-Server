@@ -34,10 +34,13 @@ public final class DenyGuildRequestHandler extends AbstractPacketHandler {
 
     @Override
     public final void handlePacket(InPacket p, Client c) {
-        p.readByte();
+        int reason = p.readByte();   // 0x35 blocking invitations, 0x36 taking care of another, 0x37 denied
+        if (reason < 0x35 || reason > 0x37) {
+            reason = 0x37;
+        }
         Character cfrom = c.getWorldServer().getPlayerStorage().getCharacterByName(p.readString());
         if (cfrom != null) {
-            Guild.answerInvitation(c.getPlayer().getId(), c.getPlayer().getName(), cfrom.getGuildId(), false);
+            Guild.answerInvitation(c.getPlayer().getId(), c.getPlayer().getName(), cfrom.getGuildId(), false, reason);
         }
     }
 }

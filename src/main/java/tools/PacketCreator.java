@@ -3965,19 +3965,19 @@ public class PacketCreator {
                 DoorObject mdo = door.getAreaDoor();
                 p.writeInt(mdo.getTo().getId());
                 p.writeInt(mdo.getFrom().getId());
-                p.writeInt(mdo.getPosition().x);
-                p.writeInt(mdo.getPosition().y);
+                p.writeShort(mdo.getPosition().x);   // shorts, as the client reads them
+                p.writeShort(mdo.getPosition().y);
             } else {
                 p.writeInt(MapId.NONE);
                 p.writeInt(MapId.NONE);
-                p.writeInt(0);
-                p.writeInt(0);
+                p.writeShort(0);
+                p.writeShort(0);
             }
         } else {
             p.writeInt(MapId.NONE);
             p.writeInt(MapId.NONE);
-            p.writeInt(0);
-            p.writeInt(0);
+            p.writeShort(0);
+            p.writeShort(0);
         }
         return p;
     }
@@ -4143,11 +4143,16 @@ public class PacketCreator {
         return p;
     }
 
-    public static Packet partyPortal(int townId, int targetId, Point position) {
+    /**
+     * A party member's door (PARTY_OPERATION 0x25, as the client reads it): the member's slot in the party (0-5), the
+     * town, the area and the town door's x, y as shorts. It went out as 0x23, the level / job update, and did nothing.
+     */
+    public static Packet partyPortal(int slot, int townId, int areaId, Point position) {
         final OutPacket p = OutPacket.create(SendOpcode.PARTY_OPERATION);
-        p.writeShort(0x23);
+        p.writeByte(0x25);
+        p.writeByte(slot);
         p.writeInt(townId);
-        p.writeInt(targetId);
+        p.writeInt(areaId);
         p.writePos(position);
         return p;
     }

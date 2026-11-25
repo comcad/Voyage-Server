@@ -196,7 +196,7 @@ public class GuildPackets {
         OutPacket p = OutPacket.create(SendOpcode.GUILD_OPERATION);
         p.writeByte(0x4C);
         p.writeByte(channel - 1);
-        p.writeByte(waitingPos);
+        p.writeInt(waitingPos);   // an int, as the client reads it
         return p;
     }
 
@@ -396,7 +396,7 @@ public class GuildPackets {
             p.writeInt(guild);
         }
         p.writeInt(alliance.getCapacity()); // probably capacity
-        p.writeShort(0);
+        p.writeString(alliance.getNotice());   // the client reads the notice here (it was blanked)
         for (Integer guildid : alliance.getGuilds()) {
             getGuildInfo(p, Server.getInstance().getGuild(guildid, world));
         }
@@ -471,7 +471,8 @@ public class GuildPackets {
         return p;
     }
 
-    public static Packet removeGuildFromAlliance(Alliance alliance, int expelledGuild, int worldId) {
+    /** expelled: the removed guild's members are told they were dismissed (1) or that they left (0). */
+    public static Packet removeGuildFromAlliance(Alliance alliance, int expelledGuild, int worldId, boolean expelled) {
         OutPacket p = OutPacket.create(SendOpcode.ALLIANCE_OPERATION);
         p.writeByte(0x10);
         p.writeInt(alliance.getId());
@@ -487,7 +488,7 @@ public class GuildPackets {
         p.writeString(alliance.getNotice());
         p.writeInt(expelledGuild);
         getGuildInfo(p, Server.getInstance().getGuild(expelledGuild, worldId, null));
-        p.writeByte(0x01);
+        p.writeByte(expelled ? 1 : 0);
         return p;
     }
 

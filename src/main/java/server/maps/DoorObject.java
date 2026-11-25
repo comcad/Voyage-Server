@@ -113,7 +113,7 @@ public class DoorObject extends AbstractMapObject {
         Character chr = client.getPlayer();
         if (this.getFrom().getId() == chr.getMapId()) {
             if (chr.getParty() != null && (this.getOwnerId() == chr.getId() || chr.getParty().getMemberById(this.getOwnerId()) != null)) {
-                chr.sendPacket(PacketCreator.partyPortal(this.getFrom().getId(), this.getTo().getId(), this.toPosition()));
+                sendPartyDoor(chr, false);
             }
 
             chr.sendPacket(PacketCreator.spawnPortal(this.getFrom().getId(), this.getTo().getId(), this.toPosition()));
@@ -129,7 +129,7 @@ public class DoorObject extends AbstractMapObject {
         if (from.getId() == chr.getMapId()) {
             Party party = chr.getParty();
             if (party != null && (ownerId == chr.getId() || party.getMemberById(ownerId) != null)) {
-                client.sendPacket(PacketCreator.partyPortal(MapId.NONE, MapId.NONE, new Point(-1, -1)));
+                sendPartyDoor(chr, true);
             }
             client.sendPacket(PacketCreator.removeDoor(ownerId, inTown()));
         }
@@ -137,8 +137,31 @@ public class DoorObject extends AbstractMapObject {
 
     public void sendDestroyData(Client client, boolean partyUpdate) {
         if (client != null && from.getId() == client.getPlayer().getMapId()) {
-            client.sendPacket(PacketCreator.partyPortal(MapId.NONE, MapId.NONE, new Point(-1, -1)));
+            sendPartyDoor(client.getPlayer(), true);
             client.sendPacket(PacketCreator.removeDoor(ownerId, inTown()));
+        }
+    }
+
+    /** The owner's door in the party window (PARTY_OPERATION 0x25), as the party status block gives it; cleared on removal. */
+    private void sendPartyDoor(Character chr, boolean cleared) {
+        Party party = chr.getParty();
+        if (party == null) {
+            return;
+        }
+        int slot = 0;
+        for (net.server.world.PartyCharacter member : party.getMembers()) {
+            if (member.getId() == ownerId) {
+                break;
+            }
+            slot++;
+        }
+        if (slot > 5) {
+            return;   // (not in the party: the client throws on a slot over 5)
+        }
+        if (cleared) {
+            chr.sendPacket(PacketCreator.partyPortal(slot, MapId.NONE, MapId.NONE, new Point(0, 0)));
+        } else {
+            chr.sendPacket(PacketCreator.partyPortal(slot, getTown().getId(), getArea().getId(), inTown() ? getPosition() : toPosition()));
         }
     }
 

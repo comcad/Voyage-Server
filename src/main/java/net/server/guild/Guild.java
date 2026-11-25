@@ -722,6 +722,11 @@ public class Guild {
     }
 
     public static boolean answerInvitation(int targetId, String targetName, int guildId, boolean answer) {
+        return answerInvitation(targetId, targetName, guildId, answer, 0x37);
+    }
+
+    /** denyReason: the result the inviter is shown on a refusal (0x35 blocking, 0x36 busy, 0x37 denied), as the client sent it. */
+    public static boolean answerInvitation(int targetId, String targetName, int guildId, boolean answer, int denyReason) {
         InviteResult res = InviteCoordinator.answerInvite(InviteType.GUILD, targetId, guildId, answer);
 
         GuildResponse mgr;
@@ -738,7 +743,9 @@ public class Guild {
                 mgr = GuildResponse.NOT_FOUND_INVITE;
         }
 
-        if (mgr != null && sender != null) {
+        if (mgr == GuildResponse.DENIED_INVITE && sender != null) {
+            sender.sendPacket(GuildPackets.responseGuildMessage((byte) denyReason, targetName));
+        } else if (mgr != null && sender != null) {
             sender.sendPacket(mgr.getPacket(targetName));
         }
         return false;
