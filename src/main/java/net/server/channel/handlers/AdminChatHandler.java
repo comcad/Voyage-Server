@@ -17,10 +17,12 @@ public class AdminChatHandler extends AbstractPacketHandler {
         if (!c.getPlayer().isGM()) {//if ( (signed int)CWvsContext::GetAdminLevel((void *)v294) > 2 )
             return;
         }
+        // as the client sends it: the scope (0 world, 1 channel, 2 map), the notice type (0 notice, 1 alert, 4 slide),
+        // then the message
         byte mode = p.readByte();
-        //not saving slides...
+        byte type = p.readByte();
         String message = p.readString();
-        Packet packet = PacketCreator.serverNotice(p.readByte(), message);//maybe I should make a check for the slea.readByte()... but I just hope gm's don't fuck things up :)
+        Packet packet = PacketCreator.serverNotice(type, message);
         switch (mode) {
             case 0 -> {// /alertall, /noticeall, /slideall
                 c.getWorldServer().broadcastPacket(packet);
