@@ -126,46 +126,11 @@ public final class UseCashItemHandler extends AbstractPacketHandler {
         }
 
         if (itemType == 504) { // vip teleport rock
-            String error1 = "Either the player could not be found or you were trying to teleport to an illegal location.";
-            boolean vip = p.readByte() == 1 && itemId / 1000 >= 5041;
-            remove(c, position, itemId);
-            boolean success = false;
-            if (!vip) {
-                int mapId = p.readInt();
-                if (itemId / 1000 >= 5041 || mapId / 100000000 == player.getMapId() / 100000000) { //check vip or same continent
-                    MapleMap targetMap = c.getChannelServer().getMapFactory().getMap(mapId);
-                    if (!FieldLimit.CANNOTVIPROCK.check(targetMap.getFieldLimit()) && (targetMap.getForcedReturnId() == MapId.NONE || MapId.isMapleIsland(mapId))) {
-                        player.forceChangeMap(targetMap, targetMap.getRandomPlayerSpawnpoint());
-                        success = true;
-                    } else {
-                        player.dropMessage(1, error1);
-                    }
-                } else {
-                    player.dropMessage(1, "You cannot teleport between continents with this teleport rock.");
-                }
+            // the rock goes only when the trip does (it was taken, then given back as a new item on a failed trip)
+            boolean byName = p.readByte() == 1;
+            if (teleportRock(c, itemId, byName, p)) {
+                remove(c, position, itemId);
             } else {
-                String name = p.readString();
-                Character victim = c.getChannelServer().getPlayerStorage().getCharacterByName(name);
-
-                if (victim != null) {
-                    MapleMap targetMap = victim.getMap();
-                    if (!FieldLimit.CANNOTVIPROCK.check(targetMap.getFieldLimit()) && (targetMap.getForcedReturnId() == MapId.NONE || MapId.isMapleIsland(targetMap.getId()))) {
-                        if (!victim.isGM() || victim.gmLevel() <= player.gmLevel()) {   // thanks Yoboes for noticing non-GM's being unreachable through rocks
-                            player.forceChangeMap(targetMap, targetMap.findClosestPlayerSpawnpoint(victim.getPosition()));
-                            success = true;
-                        } else {
-                            player.dropMessage(1, error1);
-                        }
-                    } else {
-                        player.dropMessage(1, "You cannot teleport to this map.");
-                    }
-                } else {
-                    player.dropMessage(1, "Player could not be found in this channel.");
-                }
-            }
-
-            if (!success) {
-                InventoryManipulator.addById(c, itemId, (short) 1);
                 c.sendPacket(PacketCreator.enableActions());
             }
         } else if (itemType == 505) { // AP/SP reset
@@ -631,6 +596,51 @@ public final class UseCashItemHandler extends AbstractPacketHandler {
             log.warn("NEW CASH ITEM TYPE: {}, packet: {}", itemType, p);
             c.sendPacket(PacketCreator.enableActions());
         }
+    }
+
+    /**
+     * A Teleport Rock's trip (the cash 504s and the Use tab's 232s): to a map (on the same continent, unless the rock
+     * goes anywhere) or, for those that can, to a player in this channel. Whether it went; the reason is shown otherwise.
+     */
+    public static boolean teleportRock(Client c, int itemId, boolean byName, InPacket p) {
+        Character player = c.getPlayer();
+        String error1 = "Either the player could not be found or you were trying to teleport to an illegal location.";
+        boolean anywhere = itemId / 1000 >= 5041;
+        if (!byName) {
+            int mapId = p.readInt();
+            if (anywhere || mapId / 100000000 == player.getMapId() / 100000000) { //check vip or same continent
+                MapleMap targetMap = c.getChannelServer().getMapFactory().getMap(mapId);
+                if (targetMap != null && !FieldLimit.CANNOTVIPROCK.check(targetMap.getFieldLimit()) && (targetMap.getForcedReturnId() == MapId.NONE || MapId.isMapleIsland(mapId))) {
+                    player.forceChangeMap(targetMap, targetMap.getRandomPlayerSpawnpoint());
+                    return true;
+                }
+                player.dropMessage(1, error1);
+            } else {
+                player.dropMessage(1, "You cannot teleport between continents with this teleport rock.");
+            }
+            return false;
+        }
+        String name = p.readString();
+        if (!anywhere && itemId / 10000 == 504) {
+            player.dropMessage(1, error1);   // a plain cash rock goes to maps only
+            return false;
+        }
+        Character victim = c.getChannelServer().getPlayerStorage().getCharacterByName(name);
+        if (victim == null) {
+            player.dropMessage(1, "Player could not be found in this channel.");
+            return false;
+        }
+        MapleMap targetMap = victim.getMap();
+        if (FieldLimit.CANNOTVIPROCK.check(targetMap.getFieldLimit()) || (targetMap.getForcedReturnId() != MapId.NONE && !MapId.isMapleIsland(targetMap.getId()))) {
+            player.dropMessage(1, "You cannot teleport to this map.");
+            return false;
+        }
+        if (victim.isGM() && victim.gmLevel() > player.gmLevel()) {   // thanks Yoboes for noticing non-GM's being unreachable through rocks
+            player.dropMessage(1, error1);
+            return false;
+        }
+        player.forceChangeMap(targetMap, targetMap.findClosestPlayerSpawnpoint(victim.getPosition()));
+        return true;
     }
 
     private static void remove(Client c, short position, int itemid) {

@@ -154,6 +154,7 @@ import net.server.channel.handlers.TransferNameResultHandler;
 import net.server.channel.handlers.TransferWorldHandler;
 import net.server.channel.handlers.TrockAddMapHandler;
 import net.server.channel.handlers.UseCashItemHandler;
+import net.server.channel.handlers.UseTeleportRockHandler;
 import net.server.channel.handlers.UseCatchItemHandler;
 import net.server.channel.handlers.UseChairHandler;
 import net.server.channel.handlers.UseDeathItemHandler;
@@ -328,6 +329,7 @@ public final class PacketProcessor {
         registerHandler(RecvOpcode.TAKE_DAMAGE, new TakeDamageHandler());
         registerHandler(RecvOpcode.MOVE_PLAYER, new MovePlayerHandler());
         registerHandler(RecvOpcode.USE_CASH_ITEM, new UseCashItemHandler(channelDeps.noteService()));
+        registerHandler(RecvOpcode.USE_TELEPORT_ROCK, new UseTeleportRockHandler());
         registerHandler(RecvOpcode.USE_ITEM, new UseItemHandler());
         registerHandler(RecvOpcode.USE_RETURN_SCROLL, new UseItemHandler());
         registerHandler(RecvOpcode.USE_UPGRADE_SCROLL, new ScrollHandler());
