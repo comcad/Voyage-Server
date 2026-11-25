@@ -2130,23 +2130,20 @@ public class PacketCreator {
         } else {
             rings = chr.getFriendshipRings();
         }
-        boolean yes = false;
+        // as the client reads it: one of each kind at most (a flag, then the ring's and its partner's serial and the
+        // item); a second one equipped would be read as the next kind's
         for (Ring ring : rings) {
             if (ring.equipped()) {
-                if (yes == false) {
-                    yes = true;
-                    p.writeByte(1);
-                }
+                p.writeByte(1);
                 p.writeInt(ring.getRingId());
                 p.writeInt(0);
                 p.writeInt(ring.getPartnerRingId());
                 p.writeInt(0);
                 p.writeInt(ring.getItemId());
+                return;
             }
         }
-        if (yes == false) {
-            p.writeByte(0);
-        }
+        p.writeByte(0);
     }
 
     private static void addMarriageRingLook(Client target, final OutPacket p, Character chr) {
@@ -2615,8 +2612,7 @@ public class PacketCreator {
         addCharLook(p, chr, false);
         addRingLook(p, chr, true);
         addRingLook(p, chr, false);
-        addMarriageRingLook(target, p, chr);
-        p.writeInt(0);
+        addMarriageRingLook(target, p, chr);   // (the client reads nothing after it)
         return p;
     }
 
