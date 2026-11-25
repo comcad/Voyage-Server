@@ -569,8 +569,10 @@ public class StatEffect implements Cloneable {
                     statups.add(new Pair<>(BuffStat.STANCE, iprop));
                     break;
                 case DawnWarrior.FINAL_ATTACK:
-                case WindArcher.FINAL_ATTACK:
                     statups.add(new Pair<>(BuffStat.FINALATTACK, x));
+                    break;
+                case WindArcher.FINAL_ATTACK:   // the client rolls a Wind Archer's from its own stat (bit 64), not Soul Master's
+                    statups.add(new Pair<>(BuffStat.WIND_FINAL_ATTACK, x));
                     break;
                 // MAGICIAN
                 case Magician.MAGIC_GUARD:

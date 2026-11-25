@@ -106,6 +106,7 @@ public enum BuffStat {
     // needs Soul Stone
     //end incorrect buffstats
 
+    WIND_FINAL_ATTACK(0x100000000L, true),   // client bit 64: a Wind Archer's Final Attack (Soul Master's is FINALATTACK, 63)
     WIND_WALK(0x400000000L, true),
     ARAN_COMBO(0x1000000000L, true),
     COMBO_DRAIN(0x2000000000L, true),
