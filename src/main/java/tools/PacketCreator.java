@@ -1844,17 +1844,23 @@ public class PacketCreator {
         return p;
     }
 
+    /**
+     * What others see of your buffs when you appear (SecondaryStat::DecodeForRemote, as the client reads it): the 16-byte
+     * mask; the values of the ones set, in the client's order (Combo a byte, Morph and Ghost shorts; Dark Sight, Shadow
+     * Partner, Soul Arrow and Wind Walk none); two bytes; then the seven two-state stats (all always sent), each its
+     * value, reason and time (a byte and an int), Energy Charge, Dash and the last one with a term (short), Speed
+     * Infusion with a time more, Homing Beacon with the monster.
+     */
     private static void writeForeignBuffs(OutPacket p, Character chr) {
-        p.writeInt(0);
-        p.writeShort(0); //v83
-        p.writeByte(0xFC);
-        p.writeByte(1);
+        boolean shown = !chr.isHidden();
+        boolean windWalk = shown && chr.getBuffedValue(BuffStat.WIND_WALK) != null;
+        p.writeInt(0);   // bits 96-127
+        p.writeInt(0x01FC0000 | (windWalk ? 0x4 : 0));   // bits 64-95: the two-state ones (82-88), Wind Walk (66)
         Integer morph = chr.getBuffedValue(BuffStat.MORPH), ghost = chr.getBuffedValue(BuffStat.GHOST_MORPH);
-        // the second mask's low half: Morph (0x2) and Ghost (0x20000)
-        p.writeInt((morph != null ? 2 : 0) | (ghost != null ? 0x20000 : 0));
+        p.writeInt((morph != null ? 2 : 0) | (ghost != null ? 0x20000 : 0));   // bits 32-63: Morph (33), Ghost (49)
         long buffmask = 0;
         Integer combo = null;
-        if ((chr.getBuffedValue(BuffStat.DARKSIGHT) != null || chr.getBuffedValue(BuffStat.WIND_WALK) != null) && !chr.isHidden()) {
+        if (shown && chr.getBuffedValue(BuffStat.DARKSIGHT) != null) {
             buffmask |= BuffStat.DARKSIGHT.getValue();
         }
         if (chr.getBuffedValue(BuffStat.COMBO) != null) {
@@ -1867,8 +1873,7 @@ public class PacketCreator {
         if (chr.getBuffedValue(BuffStat.SOULARROW) != null) {
             buffmask |= BuffStat.SOULARROW.getValue();
         }
-        p.writeInt((int) ((buffmask >> 32) & 0xffffffffL));
-        // the values, in the order the client reads them: Combo's (a byte), then Morph's and Ghost's (shorts)
+        p.writeInt((int) ((buffmask >> 32) & 0xffffffffL));   // bits 0-31
         if (combo != null) {
             p.writeByte(combo.byteValue());
         }
@@ -1878,55 +1883,40 @@ public class PacketCreator {
         if (ghost != null) {
             p.writeShort(ghost);
         }
-        p.writeInt((int) (buffmask & 0xffffffffL));
-
-        // Energy Charge
-        p.writeInt(chr.getEnergyBar() == 15000 ? 1 : 0);
-        p.writeShort(0);
-        p.skip(4);
-
-        boolean dashBuff = chr.getBuffedValue(BuffStat.DASH) != null;
-        // Dash Speed
-        p.writeInt(dashBuff ? 1 << 24 : 0);
-        p.skip(11);
-        p.writeShort(0);
-        // Dash Jump
-        p.skip(9);
-        p.writeInt(dashBuff ? 1 << 24 : 0);
-        p.writeShort(0);
+        p.writeByte(0);   // the two bytes after the stats
         p.writeByte(0);
 
-        // Monster Riding
-        Integer bv = chr.getBuffedValue(BuffStat.MONSTER_RIDING);
-        if (bv != null) {
-            Mount mount = chr.getMount();
-            if (mount != null) {
-                p.writeInt(mount.getItemId());
-                p.writeInt(mount.getSkillId());
-            } else {
-                p.writeLong(0);
-            }
-        } else {
-            p.writeLong(0);
-        }
-
-        int CHAR_MAGIC_SPAWN = Randomizer.nextInt();    // skill references found thanks to Rien dev team
-        p.writeInt(CHAR_MAGIC_SPAWN);
-        // Speed Infusion
-        p.skip(8);
-        p.writeInt(CHAR_MAGIC_SPAWN);
-        p.writeByte(0);
-        p.writeInt(CHAR_MAGIC_SPAWN);
+        // Energy Charge (shown once over 9999)
+        twoState(p, chr.getEnergyBar(), 0);
         p.writeShort(0);
-        // Homing Beacon
-        p.skip(9);
-        p.writeInt(CHAR_MAGIC_SPAWN);
+        // Dash: speed, then jump
+        boolean dash = chr.getBuffedValue(BuffStat.DASH) != null;
+        twoState(p, dash ? 1 : 0, 0);
+        p.writeShort(0);
+        twoState(p, dash ? 1 : 0, 0);
+        p.writeShort(0);
+        // riding: the vehicle (item) and the skill
+        Mount mount = chr.getBuffedValue(BuffStat.MONSTER_RIDING) != null ? chr.getMount() : null;
+        twoState(p, mount != null ? mount.getItemId() : 0, mount != null ? mount.getSkillId() : 0);
+        // Speed Infusion: a time more, then its term
+        twoState(p, 0, 0);
+        p.writeByte(0);
         p.writeInt(0);
-        // Zombify
-        p.skip(9);
-        p.writeInt(CHAR_MAGIC_SPAWN);
         p.writeShort(0);
+        // Homing Beacon: the monster
+        twoState(p, 0, 0);
+        p.writeInt(0);
+        // the last one: a term
+        twoState(p, 0, 0);
         p.writeShort(0);
+    }
+
+    /** A two-state stat's common part: its value, its reason, its time (a byte and an int). */
+    private static void twoState(OutPacket p, int value, int reason) {
+        p.writeInt(value);
+        p.writeInt(reason);
+        p.writeByte(0);
+        p.writeInt(0);
     }
 
     /**
@@ -3233,10 +3223,10 @@ public class PacketCreator {
         OutPacket p = OutPacket.create(SendOpcode.GIVE_FOREIGN_BUFF);
         p.writeInt(cid);
         writeLongMask(p, statups);
-        p.writeInt(buffid);
-        p.writeShort(600);
+        p.writeInt(buffid);   // Weapon Charge's reason, as the client reads it; then the two bytes and the delay
+        p.writeByte(0);
+        p.writeByte(0);
         p.writeShort(1000);//Delay
-        p.writeByte(1);
         return p;
     }
 

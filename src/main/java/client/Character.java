@@ -2678,10 +2678,8 @@ public class Character extends AbstractCharacterObject {
             MobSkill skill = di.getValue().getRight();
             final List<Pair<Disease, Integer>> debuff = Collections.singletonList(new Pair<>(disease, Integer.valueOf(skill.getX())));
 
-            if (disease != Disease.SLOW) {
+            if (disease != Disease.SLOW) {   // (the client shows no one else's Slow: it isn't in the stats it reads for another player)
                 map.broadcastMessage(PacketCreator.giveForeignDebuff(id, debuff, skill));
-            } else {
-                map.broadcastMessage(PacketCreator.giveForeignSlowDebuff(id, debuff, skill));
             }
         }
     }
@@ -2695,10 +2693,8 @@ public class Character extends AbstractCharacterObject {
                 MobSkill skill = di.getValue().getRight();
                 final List<Pair<Disease, Integer>> debuff = Collections.singletonList(new Pair<>(disease, Integer.valueOf(skill.getX())));
 
-                if (disease != Disease.SLOW) {
+                if (disease != Disease.SLOW) {   // (the client shows no one else's Slow: it isn't in the stats it reads for another player)
                     this.sendPacket(PacketCreator.giveForeignDebuff(cid, debuff, skill));
-                } else {
-                    this.sendPacket(PacketCreator.giveForeignSlowDebuff(cid, debuff, skill));
                 }
             }
         }
@@ -2728,10 +2724,8 @@ public class Character extends AbstractCharacterObject {
             final List<Pair<Disease, Integer>> debuff = Collections.singletonList(new Pair<>(disease, Integer.valueOf(skill.getX())));
             sendPacket(PacketCreator.giveDebuff(debuff, skill));
 
-            if (disease != Disease.SLOW) {
+            if (disease != Disease.SLOW) {   // (the client shows no one else's Slow: it isn't in the stats it reads for another player)
                 map.broadcastMessage(this, PacketCreator.giveForeignDebuff(id, debuff, skill), false);
-            } else {
-                map.broadcastMessage(this, PacketCreator.giveForeignSlowDebuff(id, debuff, skill), false);
             }
         }
     }
@@ -2741,10 +2735,8 @@ public class Character extends AbstractCharacterObject {
             long mask = debuff.getValue();
             sendPacket(PacketCreator.cancelDebuff(mask));
 
-            if (debuff != Disease.SLOW) {
+            if (debuff != Disease.SLOW) {   // (the client shows no one else's Slow: it isn't in the stats it reads for another player)
                 map.broadcastMessage(this, PacketCreator.cancelForeignDebuff(id, mask), false);
-            } else {
-                map.broadcastMessage(this, PacketCreator.cancelForeignSlowDebuff(id), false);
             }
 
             chrLock.lock();
