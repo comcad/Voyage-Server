@@ -25,6 +25,7 @@ import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import client.Character;
 import server.life.Monster;
 import server.maps.AnimatedMapObject;
 import server.movement.AbsoluteLifeMovement;
@@ -178,6 +179,8 @@ public abstract class AbstractMovementPacketHandler extends AbstractPacketHandle
                         // the foothold it is on now (0 in the air): what a newcomer's spawn packet tells its client to
                         // stand it on, so it has to follow the monster, not stay its spawn foothold
                         mob.setFh(fh);
+                    } else if (target instanceof Character chr) {
+                        chr.setStandingFh(fh);   // likewise for a player (their spawn packet to those who arrive later)
                     }
                     byte newstate = p.readByte();
                     target.setStance(newstate);

@@ -242,7 +242,8 @@ public class Character extends AbstractCharacterObject {
     private String commandtext;
     private String dataString;
     private String search = null;
-    private final AtomicBoolean mapTransitioning = new AtomicBoolean(true);  // player client is currently trying to change maps or log in the game map
+    private final AtomicBoolean mapTransitioning = new AtomicBoolean(true);
+    private volatile int standingFh = 0;   // the foothold their last move left them on (0 in the air, or not yet moved here)  // player client is currently trying to change maps or log in the game map
     private final AtomicBoolean awayFromWorld = new AtomicBoolean(true);  // player is online, but on cash shop or mts
     private final AtomicInteger exp = new AtomicInteger();
     private final AtomicInteger gachaexp = new AtomicInteger();
@@ -1760,6 +1761,7 @@ public class Character extends AbstractCharacterObject {
         if (client.getChannelServer().getPlayerStorage().getCharacterById(getId()) != null) {
             map = to;
             setPosition(pos);
+            standingFh = 0;   // a new map: no foothold known until they move on it
             map.addPlayer(this);
             visitMap(map);
 
@@ -5201,6 +5203,15 @@ public class Character extends AbstractCharacterObject {
 
     public int getLevel() {
         return level;
+    }
+
+    /** The foothold their last move reported them standing on (0 in the air, or none yet on this map). */
+    public int getStandingFh() {
+        return standingFh;
+    }
+
+    public void setStandingFh(int fh) {
+        standingFh = fh;
     }
 
     /** Whether a Dark Knight's Berserk is on (HP under its threshold). */

@@ -1980,9 +1980,10 @@ public class PacketCreator {
             p.writeByte(chr.getStance());
         }
 
-        // the foothold they stand on, by id (the client puts them on it); none for one dropping in as they arrive
-        Foothold standing = enteringField ? null : chr.getMap().getFootholds().findBelow(chr.getPosition());
-        p.writeShort(standing != null ? standing.getId() : 0);
+        // the foothold they stand on, by id (the client puts them on it): the one their last move reported (searching
+        // below their position misses a slope they stand on and gives the platform under it); none for one dropping
+        // in as they arrive, in the air, or not yet moved on this map (the client finds it from the position)
+        p.writeShort(enteringField ? 0 : chr.getStandingFh());
         p.writeByte(0);
         Pet[] pet = chr.getPets();
         for (int i = 0; i < 3; i++) {
