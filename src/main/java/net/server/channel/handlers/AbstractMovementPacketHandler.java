@@ -25,6 +25,7 @@ import net.AbstractPacketHandler;
 import net.packet.InPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import server.life.Monster;
 import server.maps.AnimatedMapObject;
 import server.movement.AbsoluteLifeMovement;
 import server.movement.ChangeEquip;
@@ -171,7 +172,13 @@ public abstract class AbstractMovementPacketHandler extends AbstractPacketHandle
                     short xpos = p.readShort(); //is signed fine here?
                     short ypos = p.readShort();
                     target.setPosition(new Point(xpos, ypos + yOffset));
-                    p.skip(6); //xwobble = lea.readShort(); ywobble = lea.readShort(); fh = lea.readShort();
+                    p.skip(4); //xwobble = lea.readShort(); ywobble = lea.readShort();
+                    short fh = p.readShort();
+                    if (target instanceof Monster mob) {
+                        // the foothold it is on now (0 in the air): what a newcomer's spawn packet tells its client to
+                        // stand it on, so it has to follow the monster, not stay its spawn foothold
+                        mob.setFh(fh);
+                    }
                     byte newstate = p.readByte();
                     target.setStance(newstate);
                     p.readShort(); //duration
